@@ -27,7 +27,7 @@ type Captcha struct {
 	Width      int   `json:"width" toml:"width" yaml:"width"`
 	Height     int   `json:"height" toml:"height" yaml:"height"`
 	Length     int   `json:"length" toml:"length" yaml:"length"`
-	NoiseCount int   `json:"noiseCount" toml:"noiseCount" yaml:"noiseCount"` // 噪点数量
+	NoiseCount int   `json:"noise_count" toml:"noise_count" yaml:"noise_count"` // 噪点数量
 }
 type Cache struct {
 	Use   string     `json:"use" toml:"use" yaml:"use"`
