@@ -18,7 +18,7 @@ type Mysql struct {
 	Port      int    `json:"port" toml:"port" yaml:"port"`
 	DBName    string `json:"db_name" toml:"db_name" yaml:"db_name"`
 	Charset   string `json:"charset" toml:"charset" yaml:"charset"`
-	ParseTime string `json:"parseTime" toml:"parseTime" yaml:"parseTime"`
+	ParseTime string `json:"parse_time" toml:"parse_time" yaml:"parse_time"`
 	Loc       string `json:"loc" toml:"loc" yaml:"loc"`
 }
 
