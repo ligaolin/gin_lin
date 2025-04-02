@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ligaolin/gin_lin/global"
 )
 
 type file struct {
@@ -25,7 +24,7 @@ type file struct {
 	Type      string `json:"type"`
 }
 
-func FileList(c *gin.Context, path string, name string, page int, page_size int) (m map[string]interface{}, err error) {
+func FileList(c *gin.Context, path string, name string, page int, page_size int, domain string) (m map[string]any, err error) {
 	files, err := os.ReadDir(path)
 	if err != nil {
 		return
@@ -40,7 +39,7 @@ func FileList(c *gin.Context, path string, name string, page int, page_size int)
 		}
 		files = l
 	}
-	base, err := FileBase(c)
+	base, err := FileBase(c, domain)
 	if err != nil {
 		return
 	}
@@ -87,7 +86,7 @@ func FileList(c *gin.Context, path string, name string, page int, page_size int)
 			Type:      strings.Split(mime, "/")[0],
 		})
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		"data":  list,
 		"total": len(files),
 	}, nil
@@ -120,16 +119,15 @@ func FileMkDir(path string) error {
 	return nil
 }
 
-func FileBase(c *gin.Context) (string, error) {
-	base := global.Config.Domain
-	if base == "" {
+func FileBase(c *gin.Context, domain string) (string, error) {
+	if domain == "" {
 		ip, port, err := net.SplitHostPort(c.Request.Host)
 		if err != nil {
 			return "", err
 		}
-		base = "http://" + ip + ":" + port
+		domain = "http://" + ip + ":" + port
 	}
-	return base, nil
+	return domain, nil
 }
 
 func FileMimeType(path string) (string, error) {

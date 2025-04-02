@@ -2,86 +2,107 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/ligaolin/gin_lin/global"
+	"github.com/ligaolin/gin_lin/cache"
 	"github.com/mojocn/base64Captcha"
 )
 
-type CaptchaData struct {
-	Id     string
-	Answer string
+type CaptchaConfig struct {
+	Expir      int64 `json:"expir" toml:"expir" yaml:"expir"` // 过期时间
+	Width      int   `json:"width" toml:"width" yaml:"width"`
+	Height     int   `json:"height" toml:"height" yaml:"height"`
+	Length     int   `json:"length" toml:"length" yaml:"length"`
+	NoiseCount int   `json:"noise_count" toml:"noise_count" yaml:"noise_count"` // 噪点数量
 }
+
 type Captcha struct {
-	Driver base64Captcha.Driver
-	Store  base64Captcha.Store
+	Client *Client
+	Config CaptchaConfig
+}
+
+func NewCaptcha(cfg CaptchaConfig, cacheCfg cache.CacheConfig) *Captcha {
+	return &Captcha{
+		Client: NewClient(cacheCfg),
+		Config: cfg,
+	}
 }
 
 // 创建图片验证码
-func CaptchaGenerate(c *gin.Context, w int, h int) (string, string, error) {
-	if w == 0 {
-		w = global.Config.Captcha.Width
-	}
-	if h == 0 {
-		h = global.Config.Captcha.Height
-	}
-	captcha := &Captcha{Driver: base64Captcha.NewDriverString(
-		h,                                  // 高度
-		w,                                  // 宽度
-		global.Config.Captcha.NoiseCount,   // 噪点数量
+func (c *Captcha) GenerateImageCode(cfg CaptchaConfig) (string, string, error) {
+	driver := base64Captcha.NewDriverString(
+		cfg.Height,                         // 高度
+		cfg.Width,                          // 宽度
+		cfg.NoiseCount,                     // 噪点数量
 		base64Captcha.OptionShowHollowLine, // 显示线条选项
-		global.Config.Captcha.Length,       // 验证码长度
+		cfg.Length,                         // 验证码长度
 		base64Captcha.TxtNumbers+base64Captcha.TxtAlphabet, // 数据源
 		nil,        // &color.RGBA{R: 255, G: 255, B: 0, A: 255}, &color.RGBA{R: 195, G: 245, B: 237, A: 255}// 背景颜
 		nil,        // 字体存储（可以根据需要设置）
 		[]string{}, // 字体列表
-	)}
+	)
 
-	id, content, answer := captcha.Driver.GenerateIdQuestionAnswer()
-	item, err := captcha.Driver.DrawCaptcha(content)
+	_, content, answer := driver.GenerateIdQuestionAnswer()
+	item, err := driver.DrawCaptcha(content)
 	if err != nil {
 		return "", "", err
 	}
 	b64s := item.EncodeB64string()
-	ClientSet(c, "captcha", CaptchaData{Id: id, Answer: answer}, time.Minute*time.Duration(global.Config.Captcha.Expir))
-	return id, b64s, err
+	uuid, err := c.Client.Set("captcha-image", answer, time.Minute*time.Duration(cfg.Expir))
+	return uuid, b64s, err
 }
 
 // 验证
-func CaptchaVerify(c *gin.Context, id string, answer string, clear bool) error {
-	v, err := ClientGet[CaptchaData](c, "captcha")
-	if err != nil {
+func (c *Captcha) VerifyImageCode(uuid string, answer string, clear bool) error {
+	var v string
+	if err := c.Client.Get(uuid, "captcha-image", &v, clear); err != nil {
 		return errors.New("验证码不存在或过期")
 	}
-	if clear {
-		ClientClear(c, "captcha")
-	}
-	if strings.EqualFold(v.Answer, answer) && v.Id == id {
+	if strings.EqualFold(v, answer) {
 		return nil
 	} else {
 		return errors.New("验证码错误")
 	}
 }
 
-func CaptchaEmailSend(c *gin.Context, e *Email, email string) error {
+func (c *Captcha) EmailSend(email string, cfg EmailConfig, subject string) (string, error) {
 	code := Random(6)
-	ClientSet(c, "email_captcha", code, time.Minute*time.Duration(global.Config.Captcha.Expir))
-	return e.SendCode(email, code)
+	uuid, err := c.Client.Set("captcha-email", code, time.Minute*time.Duration(c.Config.Expir))
+	if err != nil {
+		return "", err
+	}
+
+	err = c.SendCode(cfg, email, code, subject)
+	if err != nil {
+		return "", err
+	}
+	return uuid, nil
 }
 
-func CaptchaEmailVerify(c *gin.Context, code int, clear bool) error {
-	v, err := ClientGet[int](c, "email_captcha")
-	if err != nil {
+func (c *Captcha) EmailCodeVerify(uuid string, code int32, clear bool) error {
+	var val int32
+	if err := c.Client.Get(uuid, "captcha-email", &val, clear); err != nil {
 		return errors.New("验证码不存在或过期")
 	}
-	if clear {
-		ClientClear(c, "captcha")
-	}
-	if v == code {
+	if val == code {
 		return nil
 	} else {
 		return errors.New("验证码错误")
 	}
+}
+
+func (e *Captcha) SendCode(cfg EmailConfig, to string, code int32, subject string) error {
+	return NewEmail(cfg).Send([]string{to}, subject, fmt.Sprintf(`尊敬的用户：
+
+	您好！
+	您正在进行邮箱验证操作，验证码为：%d。
+	此验证码有效期为 %d分钟，请尽快完成验证。
+	
+	如非本人操作，请忽略此邮件。
+	
+	感谢您的支持！
+	
+	【系统邮件，请勿直接回复】`, code, e.Config.Expir))
 }

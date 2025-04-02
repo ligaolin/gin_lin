@@ -3,36 +3,30 @@ package utils
 import (
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/ligaolin/gin_lin/cache"
 )
 
-func ClientSet(c *gin.Context, k string, v interface{}, expir time.Duration) error {
-	key, err := setKey(c, k)
-	if err != nil {
-		return err
-	}
-	return cache.CacheSet(key, v, expir)
+type Client struct {
+	Cache cache.Cache
 }
 
-func ClientGet[T cache.Base](c *gin.Context, k string) (t T, err error) {
-	key, err := setKey(c, k)
-	if err != nil {
-		return t, err
+func NewClient(cfg cache.CacheConfig) *Client {
+	return &Client{
+		Cache: *cache.NewCache(cfg),
 	}
-	return cache.CacheGet[T](key)
 }
 
-func setKey(c *gin.Context, k string) (string, error) {
-	userAgent := c.Request.Header.Get("User-Agent")
-	ip := c.ClientIP()
-	return k + "-" + userAgent + "-" + ip, nil
+func (c *Client) Set(k string, v any, expir time.Duration) (string, error) {
+	uuid := uuid.New().String()
+	c.Cache.Set("client-"+k+uuid, v, expir)
+	return uuid, nil
 }
 
-func ClientClear(c *gin.Context, k string) error {
-	key, err := setKey(c, k)
-	if err != nil {
-		return err
+func (c *Client) Get(uuid string, k string, t any, clear bool) error {
+	err := c.Cache.Get("client-"+k+uuid, t)
+	if err != nil && clear {
+		c.Cache.Delete("client-" + k + uuid)
 	}
-	return cache.CacheDelete(key)
+	return err
 }

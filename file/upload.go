@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ligaolin/gin_lin/global"
 	"github.com/ligaolin/gin_lin/utils"
 )
 
@@ -24,7 +23,7 @@ type UploadFile struct {
 	Mime      string `json:"mime"`
 }
 
-func Upload(c *gin.Context, file *multipart.FileHeader, path string, l Limit) (f UploadFile, err error) {
+func Upload(c *gin.Context, file *multipart.FileHeader, path string, l Limit, static string) (f UploadFile, err error) {
 	name := strings.Split(file.Filename, ".")
 	mime := file.Header.Get("Content-Type")
 	types := strings.Split(mime, "/")[0]
@@ -44,7 +43,7 @@ func Upload(c *gin.Context, file *multipart.FileHeader, path string, l Limit) (f
 		return
 	}
 
-	path, err = getPath(path, extension, types)
+	path, err = getPath(path, extension, types, static)
 	if err != nil {
 		return
 	}
@@ -54,7 +53,7 @@ func Upload(c *gin.Context, file *multipart.FileHeader, path string, l Limit) (f
 		return
 	}
 
-	base, err := FileBase(c)
+	base, err := FileBase(c, static)
 	if err != nil {
 		return
 	}
@@ -69,13 +68,13 @@ func Upload(c *gin.Context, file *multipart.FileHeader, path string, l Limit) (f
 	}, nil
 }
 
-func getPath(path string, extension string, types string) (string, error) {
+func getPath(path string, extension string, types string, static string) (string, error) {
 	if path == "" {
-		path = global.Config.Static + "/upload/" + types + "/" + time.Now().Format("2006-01-02")
+		path = static + "/upload/" + types + "/" + time.Now().Format("2006-01-02")
 	} else {
 		path = strings.ReplaceAll(strings.TrimPrefix(path, "/"), "/..", "")
 	}
-	if !utils.StringPreIs(path, global.Config.Static) {
+	if !utils.StringPreIs(path, static) {
 		return "", errors.New("您上传的路径不符合规范")
 	}
 	path += "/" + fmt.Sprintf("%d", time.Now().UnixNano()) + "." + extension

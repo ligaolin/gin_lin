@@ -6,26 +6,18 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ligaolin/gin_lin/global"
 	"github.com/ligaolin/gin_lin/utils"
 	"gorm.io/gorm"
 )
 
-type Model interface {
-	gorm.Model | any
-}
-type Base interface {
-}
-
-func New[T Model, U Base](id *uint32, param U) (T, error) {
-	var m T
+func (d *Mysql) Model(id *uint32, param any, m any) error {
 	if id != nil {
-		if err := global.Db.First(&m, *id).Error; err != nil {
-			return m, errors.New("不存在的数据")
+		if err := d.Db.First(m, *id).Error; err != nil {
+			return errors.New("不存在的数据")
 		}
 	}
-	utils.AssignFields(&param, &m)
-	return m, nil
+	utils.AssignFields(param, m)
+	return nil
 }
 
 type Where struct {
@@ -35,7 +27,7 @@ type Where struct {
 	Nullable bool
 }
 
-func ToWhere(data []Where) string {
+func (d *Mysql) ToWhere(data []Where) string {
 	var sql []string
 	for _, v := range data {
 		if v.Nullable || (!v.Nullable && v.Value != nil && *v.Value != "") {
@@ -80,13 +72,11 @@ type Query struct {
 	Select   string
 }
 
-func List[T Model, U Model](q Query) (map[string]interface{}, error) {
+func (d *Mysql) List(q Query, model any, data []any) (map[string]any, error) {
 	var (
-		data       []U
-		model      T
 		total      int64
-		db         = global.Db.Model(&model).Where(q.Where)
-		total_db   = global.Db.Model(&model).Where(q.Where)
+		db         = d.Db.Model(&model).Where(q.Where)
+		total_db   = d.Db.Model(&model).Where(q.Where)
 		total_page *int64
 	)
 
@@ -123,7 +113,7 @@ func List[T Model, U Model](q Query) (map[string]interface{}, error) {
 	} else {
 		q.PageSize = nil
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		"data":       data,
 		"total":      total,      // 总数量
 		"total_page": total_page, // 总页数
@@ -132,17 +122,17 @@ func List[T Model, U Model](q Query) (map[string]interface{}, error) {
 	}, nil
 }
 
-func Edit[T Model](id *uint32, m T, same_data []Same) (T, string, error) {
-	err := same[T](same_data, id)
+func (d *Mysql) Edit(id *uint32, m any, same_data []Same) (string, error) {
+	err := same(same_data, id, m, d.Db)
 	if err != nil {
-		return m, "", err
+		return "", err
 	}
 	if id == nil {
-		err := global.Db.Create(&m).Error
-		return m, "添加成功", err
+		err := d.Db.Create(m).Error
+		return "添加成功", err
 	} else {
-		err := global.Db.Save(&m).Error
-		return m, "编辑成功", err
+		err := d.Db.Save(m).Error
+		return "编辑成功", err
 	}
 }
 
@@ -151,16 +141,15 @@ type Same struct {
 	Message string
 }
 
-func same[T Model](data []Same, id *uint32) error {
+func same(data []Same, id *uint32, model any, db *gorm.DB) error {
 	var (
 		count int64
-		model T
 	)
 	for _, v := range data {
 		if id != nil {
 			v.Sql += fmt.Sprintf(" AND id != %d", *id)
 		}
-		global.Db.Model(&model).Where(v.Sql).Count(&count)
+		db.Model(&model).Where(v.Sql).Count(&count)
 		if count > 0 {
 			return errors.New(v.Message)
 		}
@@ -169,12 +158,12 @@ func same[T Model](data []Same, id *uint32) error {
 }
 
 type UpdateParam struct {
-	Id    *uint32      `json:"id"`
-	Field *string      `json:"field"`
-	Value *interface{} `json:"value"`
+	Id    *uint32 `json:"id"`
+	Field *string `json:"field"`
+	Value *any    `json:"value"`
 }
 
-func Update[T Model](c *gin.Context, has []string) (param UpdateParam, before T, err error) {
+func (d *Mysql) Update(c *gin.Context, has []string, before any, after any) (param UpdateParam, err error) {
 	if err = c.Bind(&param); err != nil {
 		return
 	}
@@ -194,12 +183,11 @@ func Update[T Model](c *gin.Context, has []string) (param UpdateParam, before T,
 		err = errors.New("field数据不合法")
 		return
 	}
-	if err = global.Db.First(&before, *param.Id).Error; err != nil {
+	if err = d.Db.First(before, *param.Id).Error; err != nil {
 		err = errors.New("不存在的数据")
 		return
 	}
-	var after T
-	err = global.Db.Model(&after).Where("id = ?", *param.Id).Update(*param.Field, *param.Value).Error
+	err = d.Db.Model(after).Where("id = ?", *param.Id).Update(*param.Field, *param.Value).Error
 	return
 }
 
@@ -209,16 +197,15 @@ type FindChildrenIdParam struct {
 	IdName  string
 }
 
-func FindChildrenId[T Model](f FindChildrenIdParam) error {
+func (d *Mysql) FindChildrenId(f FindChildrenIdParam, m any) error {
 	var (
-		m    T
 		cids []uint32
 	)
-	if err := global.Db.Model(&m).Where(f.PidName+" IN ?", *f.Ids).Pluck(f.IdName, &cids).Error; err != nil {
+	if err := d.Db.Model(&m).Where(f.PidName+" IN ?", *f.Ids).Pluck(f.IdName, &cids).Error; err != nil {
 		return err
 	}
 	if len(cids) > 0 {
-		err := FindChildrenId[T](FindChildrenIdParam{Ids: &cids, PidName: f.PidName, IdName: f.IdName})
+		err := d.FindChildrenId(FindChildrenIdParam{Ids: &cids, PidName: f.PidName, IdName: f.IdName}, m)
 		if err != nil {
 			return err
 		}
@@ -234,22 +221,22 @@ type DeleteParam struct {
 }
 
 // 当没有上级时pid_name和id_name都设为""
-func Delete[T Model](d DeleteParam) ([]uint32, error) {
-	if d.IdName == "" {
-		d.IdName = "id"
+func (d *Mysql) Delete(param DeleteParam, m any) ([]uint32, error) {
+	if param.IdName == "" {
+		param.IdName = "id"
 	}
-	data, err := utils.StringToSliceUint32(d.Id, ",")
+	data, err := utils.StringToSliceUint32(param.Id, ",")
 	if err != nil {
 		return nil, err
 	}
-	if d.PidName != "" {
-		err = FindChildrenId[T](FindChildrenIdParam{Ids: &data, PidName: d.PidName, IdName: d.IdName})
+	if param.PidName != "" {
+		err = d.FindChildrenId(FindChildrenIdParam{Ids: &data, PidName: param.PidName, IdName: param.IdName}, m)
 		if err != nil {
 			return nil, err
 		}
 	}
-	var m T
-	if err := global.Db.Delete(&m, data).Error; err != nil {
+
+	if err := d.Db.Delete(&m, data).Error; err != nil {
 		return nil, err
 	}
 	return data, nil
@@ -262,14 +249,12 @@ type FirstParam struct {
 	IdName string
 }
 
-func First[T Model, U Model](f FirstParam) (U, error) {
+func (d *Mysql) First(f FirstParam, m any, model any) error {
 	if f.IdName == "" {
 		f.IdName = "id"
 	}
 	var (
-		m     T
-		db    = global.Db.Model(&m).Where(f.IdName+" = ?", f.Id)
-		model U
+		db = d.Db.Model(m).Where(f.IdName+" = ?", f.Id)
 	)
 	if f.Joins != "" {
 		db.Joins(f.Joins)
@@ -278,18 +263,16 @@ func First[T Model, U Model](f FirstParam) (U, error) {
 		db.Select(f.Select)
 	}
 	if err := db.First(&model).Error; err != nil {
-		return model, errors.New("不存在的数据")
+		return errors.New("不存在的数据")
 	}
-	return model, nil
+	return nil
 }
 
-func Code[T Model](field string, n int) (string, error) {
-	var model T
+func (d *Mysql) Code(field string, n int, model any) (string, error) {
 	var code string
-
 	for {
 		code = utils.GenerateRandomAlphanumeric(n)
-		if err := global.Db.Where(field+" = ?", code).Select("id").First(&model).Error; err != nil {
+		if err := d.Db.Where(field+" = ?", code).Select("id").First(model).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				// 如果记录不存在，说明生成的 code 是唯一的，可以返回
 				return code, nil

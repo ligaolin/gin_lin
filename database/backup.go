@@ -8,15 +8,23 @@ import (
 	"time"
 
 	"github.com/ligaolin/gin_lin/file"
-	"github.com/ligaolin/gin_lin/global"
+	"gorm.io/gorm"
 )
 
-func Backup(path string) error {
+type DbBackup struct {
+	Db *gorm.DB
+}
+
+func NewDbBackup(db *gorm.DB) *DbBackup {
+	return &DbBackup{Db: db}
+}
+
+func (d *DbBackup) Backup(path string) error {
 	var backupSQL strings.Builder
 
 	// 获取所有表名
 	var database_name string
-	if err := global.Db.Raw("SELECT DATABASE()").Scan(&database_name).Error; err != nil {
+	if err := d.Db.Raw("SELECT DATABASE()").Scan(&database_name).Error; err != nil {
 		return err
 	}
 	backupSQL.WriteString("CREATE DATABASE IF NOT EXISTS `" + database_name + "`;\n")
@@ -24,20 +32,20 @@ func Backup(path string) error {
 
 	// 获取所有表名
 	var tableNames []string
-	if err := global.Db.Raw("SHOW TABLES").Scan(&tableNames).Error; err != nil {
+	if err := d.Db.Raw("SHOW TABLES").Scan(&tableNames).Error; err != nil {
 		return err
 	}
 
 	for _, v := range tableNames {
 		// 备份表结构
-		sql, err := backupTableStructure(v)
+		sql, err := backupTableStructure(v, d.Db)
 		if err != nil {
 			return err
 		}
 		backupSQL.WriteString(sql)
 
 		// 备份表数据
-		tableDataSQL, err := backupTableData(v)
+		tableDataSQL, err := backupTableData(v, d.Db)
 		if err != nil {
 			return err
 		}
@@ -69,22 +77,22 @@ type TableInfo struct {
 	CreateTable string `gorm:"column:Create Table"`
 }
 
-func backupTableStructure(tableName string) (string, error) {
+func backupTableStructure(tableName string, db *gorm.DB) (string, error) {
 	var createTableSQL TableInfo
-	err := global.Db.Raw("SHOW CREATE TABLE " + tableName).Scan(&createTableSQL).Error
+	err := db.Raw("SHOW CREATE TABLE " + tableName).Scan(&createTableSQL).Error
 	if err != nil {
 		return "", err
 	}
 	return "DROP TABLE IF EXISTS `" + tableName + "`;\n" + createTableSQL.CreateTable + ";\n\n", nil
 }
 
-func backupTableData(tableName string) (string, error) {
+func backupTableData(tableName string, db *gorm.DB) (string, error) {
 	var (
 		dataSQL  strings.Builder
 		has_data = false
 		i        = 0
 	)
-	rows, err := global.Db.Raw("SELECT * FROM " + tableName).Rows()
+	rows, err := db.Raw("SELECT * FROM " + tableName).Rows()
 	if err != nil {
 		return "", err
 	}
@@ -106,8 +114,8 @@ func backupTableData(tableName string) (string, error) {
 			dataSQL.WriteString(",\n\t(")
 		}
 		has_data = true
-		values := make([]interface{}, len(columns))
-		valuePtrs := make([]interface{}, len(columns))
+		values := make([]any, len(columns))
+		valuePtrs := make([]any, len(columns))
 		for i := range values {
 			valuePtrs[i] = &values[i]
 		}
@@ -150,7 +158,7 @@ func backupTableData(tableName string) (string, error) {
 	}
 }
 
-func Reduction(path string) error {
+func (d *DbBackup) Reduction(path string) error {
 	// 读取SQL文件
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -166,7 +174,7 @@ func Reduction(path string) error {
 		if sql == "" {
 			continue
 		}
-		if err := global.Db.Exec(sql).Error; err != nil {
+		if err := d.Db.Exec(sql).Error; err != nil {
 			return err
 		}
 	}

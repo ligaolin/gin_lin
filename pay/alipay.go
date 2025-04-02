@@ -9,28 +9,36 @@ import (
 	"github.com/go-pay/gopay/alipay/v3"
 	"github.com/go-pay/util"
 	"github.com/go-pay/xlog"
-	"github.com/ligaolin/gin_lin/global"
 )
+
+type PayAliConfig struct {
+	AppID               string `json:"app_id" toml:"app_id" yaml:"app_id"`
+	PrivateKey          string `json:"private_key" toml:"private_key" yaml:"private_key"`                                  // 文件路径
+	AppPublicCert       string `json:"app_public_cert" toml:"app_public_cert" yaml:"app_public_cert"`                      // 文件路径
+	AlipayRootCert      string `json:"alipay_root_cert" toml:"alipay_root_cert" yaml:"alipay_root_cert"`                   // 文件路径
+	AlipayCertPublicKey string `json:"alipay_cert_public_key" toml:"alipay_cert_public_key" yaml:"alipay_cert_public_key"` // 文件路径
+}
 
 type AliPay struct {
 	Client *alipay.ClientV3
+	Config PayAliConfig
 }
 
-func AliPayClient() (ap AliPay, err error) {
-	privateKey, err := os.ReadFile(global.Config.Pay.Ali.PrivateKey)
+func NewAliPay(cfg PayAliConfig) (*AliPay, error) {
+	privateKey, err := os.ReadFile(cfg.PrivateKey)
 	if err != nil {
 		xlog.Error(err)
-		return
+		return nil, err
 	}
 
 	// 初始化支付宝客V3户端
 	// appid：应用ID
 	// privateKey：应用私钥，支持PKCS1和PKCS8
 	// isProd：是否是正式环境，沙箱环境请选择新版沙箱应用。
-	ap.Client, err = alipay.NewClientV3(global.Config.Pay.Ali.AppID, string(privateKey), true)
+	client, err := alipay.NewClientV3(cfg.AppID, string(privateKey), true)
 	if err != nil {
 		xlog.Error(err)
-		return
+		return nil, err
 	}
 
 	// 自定义配置http请求接收返回结果body大小，默认 10MB
@@ -40,33 +48,33 @@ func AliPayClient() (ap AliPay, err error) {
 	// client.SetRequestIdFunc()
 
 	// 打开Debug开关，输出日志，默认关闭
-	ap.Client.DebugSwitch = gopay.DebugOn
+	client.DebugSwitch = gopay.DebugOn
 
 	// 设置biz_content加密KEY，设置此参数默认开启加密（目前不可用）
 	//client.SetAESKey("1234567890123456")
 
 	// 传入证书内容
-	app_public_cert, err := os.ReadFile(global.Config.Pay.Ali.AppPublicCert)
+	app_public_cert, err := os.ReadFile(cfg.AppPublicCert)
 	if err != nil {
 		xlog.Error(err)
-		return
+		return nil, err
 	}
 
 	// 传入证书内容
-	alipay_root_cert, err := os.ReadFile(global.Config.Pay.Ali.AlipayRootCert)
+	alipay_root_cert, err := os.ReadFile(cfg.AlipayRootCert)
 	if err != nil {
 		xlog.Error(err)
-		return
+		return nil, err
 	}
 
 	// 传入证书内容
-	alipay_cert_public_key, err := os.ReadFile(global.Config.Pay.Ali.AlipayCertPublicKey)
+	alipay_cert_public_key, err := os.ReadFile(cfg.AlipayCertPublicKey)
 	if err != nil {
 		xlog.Error(err)
-		return
+		return nil, err
 	}
-	err = ap.Client.SetCert(app_public_cert, alipay_root_cert, alipay_cert_public_key)
-	return
+	err = client.SetCert(app_public_cert, alipay_root_cert, alipay_cert_public_key)
+	return &AliPay{Client: client, Config: cfg}, err
 }
 
 func (ap *AliPay) NativePay(ctx context.Context, subject string, price float32) (*alipay.TradePrecreateRsp, error) {

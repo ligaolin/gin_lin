@@ -3,7 +3,7 @@ package utils
 import "reflect"
 
 // 将结构体A相同字段赋值给结构体B
-func AssignFields(a interface{}, b interface{}) {
+func AssignFields(a any, b any) {
 	reflectA := reflect.ValueOf(a).Elem() // 获取结构体A的反射值
 	reflectB := reflect.ValueOf(b).Elem() // 获取结构体B的反射值
 

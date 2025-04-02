@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Success(c *gin.Context, message string, data interface{}) {
+func Success(c *gin.Context, message string, data any) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": message,
 		"code":    200,
@@ -22,7 +22,7 @@ func Error(c *gin.Context, message string) {
 	})
 }
 
-func Response(c *gin.Context, code int, message string, data interface{}) {
+func Response(c *gin.Context, code int, message string, data any) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": message,
 		"code":    code,

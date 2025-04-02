@@ -6,42 +6,52 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/ligaolin/gin_lin/global"
 )
 
-type MyCustomClaims struct {
+type JwtConfig struct {
+	Expir  int64  `json:"expir" toml:"expir" yaml:"expir"` // jwt登录过期时间，分钟，1440一天
+	Issuer string `json:"issuer" toml:"issuer" yaml:"issuer"`
+}
+
+type Claims struct {
 	Id   string `json:"id"`
 	Type string `json:"type"`
 	jwt.RegisteredClaims
 }
 
-func JwtSet(id *uint32, user_type string) (string, error) {
-	claims := MyCustomClaims{
+type Jwt struct {
+}
+
+func NewJwt(cfg JwtConfig) *Jwt {
+	return &Jwt{}
+}
+
+func (j *Jwt) Set(id *uint32, types string, cfg JwtConfig) (string, error) {
+	claims := Claims{
 		fmt.Sprintf("%d", *id),
-		user_type,
+		types,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(global.Config.Jwt.Expir) * time.Minute)),
-			Issuer:    "lin",
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(cfg.Expir) * time.Minute)),
+			Issuer:    cfg.Issuer,
 		},
 	}
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("AllYourBase"))
 }
 
-func JwtGet(t string) (MyCustomClaims, error) {
-	var c MyCustomClaims
-	token, err := jwt.ParseWithClaims(t, &MyCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+func (j *Jwt) Get(t string, claims *Claims) error {
+	token, err := jwt.ParseWithClaims(t, claims, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("身份信无效或已过期")
 		}
 		return []byte("AllYourBase"), nil
 	})
 	if err != nil {
-		return c, err
+		return err
 	}
 
-	if claims, ok := token.Claims.(*MyCustomClaims); ok {
-		return *claims, nil
+	if _, ok := token.Claims.(*Claims); ok {
+		return nil
 	} else {
-		return c, errors.New("解析身份信息失败")
+		return errors.New("解析身份信息失败")
 	}
 }

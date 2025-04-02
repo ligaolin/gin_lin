@@ -5,33 +5,37 @@ import (
 	"os"
 
 	"github.com/gregjones/httpcache/diskcache"
-	"github.com/ligaolin/gin_lin/global"
 )
 
-func DiskInit() *diskcache.Cache {
-	return diskcache.New(global.Config.Cache.File.Path)
+type FileCache struct {
+	Client *diskcache.Cache
+	Path   string
 }
 
-func DiskGet(key string) (string, error) {
-	c := DiskInit()
-	s, ok := c.Get(key)
+func NewFileCache(path string) *FileCache {
+	return &FileCache{
+		Client: diskcache.New(path),
+		Path:   path,
+	}
+}
+
+func (f *FileCache) Get(key string) (string, error) {
+	s, ok := f.Client.Get(key)
 	if !ok {
 		return "", errors.New("从文件缓存获取数据失败")
 	}
 	return string(s), nil
 }
 
-func DiskSet(key string, value []byte) {
-	c := DiskInit()
-	c.Set(key, value)
+func (f *FileCache) Set(key string, value []byte) {
+	f.Client.Set(key, value)
 }
 
-func DiskDelete(key string) {
-	c := DiskInit()
-	c.Delete(key)
+func (f *FileCache) Delete(key string) {
+	f.Client.Delete(key)
 }
 
 // 删除全部
-func DiskDeleteAll() error {
-	return os.RemoveAll(global.Config.Cache.File.Path)
+func (f *FileCache) DiskDeleteAll() error {
+	return os.RemoveAll(f.Path)
 }

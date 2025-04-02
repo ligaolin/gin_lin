@@ -5,31 +5,29 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ligaolin/gin_lin/global"
 	"github.com/redis/go-redis/v9"
 )
 
-func RedisInit() (context.Context, *redis.Client) {
-	ctx := context.Background()
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", global.Config.Cache.Redis.Addr, global.Config.Cache.Redis.Port),
-		Password: global.Config.Cache.Redis.Password, // no password set
-		DB:       0,                                  // use default DB
-	})
-	return ctx, rdb
+type RedisCache struct {
+	Context context.Context
+	Client  *redis.Client
 }
 
-func RedisSet(key string, value interface{}, expir time.Duration) error {
-	ctx, rdb := RedisInit()
-	return rdb.Set(ctx, key, value, expir).Err()
+func NewRedis(addr string, port int, password string) *RedisCache {
+	return &RedisCache{
+		Context: context.Background(),
+		Client:  redis.NewClient(&redis.Options{Addr: fmt.Sprintf("%s:%d", addr, port), Password: password, DB: 0}),
+	}
 }
 
-func RedisGet(key string) (string, error) {
-	ctx, rdb := RedisInit()
-	return rdb.Get(ctx, key).Result()
+func (r *RedisCache) Set(key string, value any, expir time.Duration) error {
+	return r.Client.Set(r.Context, key, value, expir).Err()
 }
 
-func RedisDelete(key string) error {
-	ctx, rdb := RedisInit()
-	return rdb.Del(ctx, key).Err()
+func (r *RedisCache) Get(key string) (string, error) {
+	return r.Client.Get(r.Context, key).Result()
+}
+
+func (r *RedisCache) Delete(key string) error {
+	return r.Client.Del(r.Context, key).Err()
 }
