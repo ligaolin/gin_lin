@@ -47,14 +47,14 @@ var Rules = map[string]string{
 type Base any
 
 // 绑定参数并验证
-func Get[T Base](c *gin.Context) (param T, err error) {
-	if err = c.Bind(&param); err != nil {
-		return
+func Get(c *gin.Context, param any) error {
+	if err := c.Bind(param); err != nil {
+		return err
 	}
-	if err = Validator(param); err != nil {
-		return
+	if err := Validator(param); err != nil {
+		return err
 	}
-	return param, nil
+	return nil
 }
 
 // 验证数据

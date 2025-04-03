@@ -31,13 +31,13 @@ func NewCaptcha(cfg CaptchaConfig, cacheCfg cache.CacheConfig) *Captcha {
 }
 
 // 创建图片验证码
-func (c *Captcha) GenerateImageCode(cfg CaptchaConfig) (string, string, error) {
+func (c *Captcha) GenerateImageCode() (string, string, error) {
 	driver := base64Captcha.NewDriverString(
-		cfg.Height,                         // 高度
-		cfg.Width,                          // 宽度
-		cfg.NoiseCount,                     // 噪点数量
+		c.Config.Height,                    // 高度
+		c.Config.Width,                     // 宽度
+		c.Config.NoiseCount,                // 噪点数量
 		base64Captcha.OptionShowHollowLine, // 显示线条选项
-		cfg.Length,                         // 验证码长度
+		c.Config.Length,                    // 验证码长度
 		base64Captcha.TxtNumbers+base64Captcha.TxtAlphabet, // 数据源
 		nil,        // &color.RGBA{R: 255, G: 255, B: 0, A: 255}, &color.RGBA{R: 195, G: 245, B: 237, A: 255}// 背景颜
 		nil,        // 字体存储（可以根据需要设置）
@@ -50,7 +50,7 @@ func (c *Captcha) GenerateImageCode(cfg CaptchaConfig) (string, string, error) {
 		return "", "", err
 	}
 	b64s := item.EncodeB64string()
-	uuid, err := c.Client.Set("captcha-image", answer, time.Minute*time.Duration(cfg.Expir))
+	uuid, err := c.Client.Set("captcha-image", answer, time.Minute*time.Duration(c.Config.Expir))
 	return uuid, b64s, err
 }
 
