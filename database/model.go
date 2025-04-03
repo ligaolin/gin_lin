@@ -72,11 +72,11 @@ type Query struct {
 	Select   string
 }
 
-func (d *Mysql) List(q Query, model any, data []any) (map[string]any, error) {
+func (d *Mysql) List(q Query, model any, data any) (map[string]any, error) {
 	var (
 		total      int64
-		db         = d.Db.Model(&model).Where(q.Where)
-		total_db   = d.Db.Model(&model).Where(q.Where)
+		db         = d.Db.Model(model).Where(q.Where)
+		total_db   = d.Db.Model(model).Where(q.Where)
 		total_page *int64
 	)
 
@@ -98,7 +98,7 @@ func (d *Mysql) List(q Query, model any, data []any) (map[string]any, error) {
 		db.Select(q.Select)
 	}
 
-	if err := db.Find(&data).Error; err != nil {
+	if err := db.Find(data).Error; err != nil {
 		return nil, err
 	}
 	if err := total_db.Count(&total).Error; err != nil {

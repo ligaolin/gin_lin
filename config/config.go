@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// LoadConfig 从指定路径加载配置文件，如果文件不存在则返回默认配置
+// LoadConfig 从指定路径加载配置文件，并绑定到cfg上
 func LoadConfig(path string, cfg any) error {
 	// 检查文件是否存在
 	if _, err := os.Stat(path); os.IsNotExist(err) {
