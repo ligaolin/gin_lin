@@ -3,12 +3,9 @@ package cache
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/robfig/cron/v3"
 )
 
 type CacheConfig struct {
@@ -37,14 +34,18 @@ type Cache struct {
 	Config     CacheConfig
 }
 
+// 创建缓存
 func NewCache(cfg CacheConfig) *Cache {
-	return &Cache{
+	c := &Cache{
 		RedisCache: NewRedis(cfg.Redis.Addr, cfg.Redis.Port, cfg.Redis.Password),
 		FileCache:  NewFileCache(cfg.File.Path),
 		Config:     cfg,
 	}
+	go c.CleanDiskCache()
+	return c
 }
 
+// 获取缓存
 func (c *Cache) Get(key string, t any) (err error) {
 	if c.Config.Use == "redis" {
 		s, err := c.RedisCache.Get(key)
@@ -54,7 +55,7 @@ func (c *Cache) Get(key string, t any) (err error) {
 		err = json.Unmarshal([]byte(s), t)
 		return err
 	} else {
-		fc, err := c.Expir(key)
+		fc, err := c.getFileCacheValue(key)
 		if err != nil {
 			return err
 		}
@@ -63,6 +64,7 @@ func (c *Cache) Get(key string, t any) (err error) {
 	}
 }
 
+// 设置缓存，expir小于等于-1为永久缓存
 func (c *Cache) Set(key string, value any, expir time.Duration) error {
 	s, err := json.Marshal(value)
 	if err != nil {
@@ -84,6 +86,7 @@ func (c *Cache) Set(key string, value any, expir time.Duration) error {
 	}
 }
 
+// 删除缓存
 func (c *Cache) Delete(key string) error {
 	if c.Config.Use == "redis" {
 		return c.RedisCache.Delete(key)
@@ -93,7 +96,8 @@ func (c *Cache) Delete(key string) error {
 	}
 }
 
-func (c *Cache) Expir(key string) (fc fileCacheValue, err error) {
+// 获取文件缓存的数据
+func (c *Cache) getFileCacheValue(key string) (fc fileCacheValue, err error) {
 	s, err := c.FileCache.Get(key)
 	if err != nil {
 		return fc, err
@@ -114,6 +118,7 @@ func (c *Cache) Expir(key string) (fc fileCacheValue, err error) {
 	return fc, nil
 }
 
+// 清理过期文件缓存
 func (c *Cache) CleanDiskCache() {
 	path := c.Config.File.Path
 	files, err := os.ReadDir(path)
@@ -137,25 +142,5 @@ func (c *Cache) CleanDiskCache() {
 				os.Remove(file_path)
 			}
 		}
-	}
-}
-
-func (c *Cache) CleanDiskCacheCron() {
-	if c.Config.Use == "file" {
-		cron := cron.New()
-
-		// @daily 每天凌晨 0 点
-		// @every 1m 每分钟
-		_, err := cron.AddFunc("@daily", func() {
-			// 清除文件缓存
-			c.CleanDiskCache()
-		})
-		if err != nil {
-			log.Printf("Failed to add cron job: %v", err)
-			return
-		}
-
-		// 启动 Cron
-		cron.Start()
 	}
 }
