@@ -1,182 +1,216 @@
 package database
 
 import (
+	"bufio"
+	"database/sql"
 	"fmt"
 	"os"
-	"reflect"
+	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/ligaolin/gin_lin/file"
-	"gorm.io/gorm"
+	_ "github.com/go-sql-driver/mysql"
 )
 
-type DbBackup struct {
-	Db *gorm.DB
+type Backup struct {
+	Db     *sql.DB
+	path   string
+	config MysqlConfig
 }
 
-func NewDbBackup(db *gorm.DB) *DbBackup {
-	return &DbBackup{Db: db}
+// 创建一个数据库备份对象
+func NewDbBackup(cfg MysqlConfig, path string) (*Backup, error) {
+	// 构建数据库连接字符串
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%s&loc=%s",
+		cfg.User,
+		cfg.Password,
+		cfg.Host,
+		cfg.Port,
+		cfg.DBName,
+		cfg.Charset,
+		cfg.ParseTime,
+		cfg.Loc,
+	)
+
+	// 连接数据库
+	db, err := sql.Open("mysql", dsn)
+	return &Backup{Db: db, path: path, config: cfg}, err
 }
 
-func (d *DbBackup) Backup(path string) error {
-	var backupSQL strings.Builder
+// 备份数据库
+func (db *Backup) Backup() error {
+	defer db.Db.Close()
 
-	// 获取所有表名
-	var database_name string
-	if err := d.Db.Raw("SELECT DATABASE()").Scan(&database_name).Error; err != nil {
-		return err
-	}
-	backupSQL.WriteString("CREATE DATABASE IF NOT EXISTS `" + database_name + "`;\n")
-	backupSQL.WriteString("USE `" + database_name + "`;\n\n")
-
-	// 获取所有表名
-	var tableNames []string
-	if err := d.Db.Raw("SHOW TABLES").Scan(&tableNames).Error; err != nil {
-		return err
+	dir := filepath.Dir(db.path)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return fmt.Errorf("无法创建目录 %s：%w", dir, err)
 	}
 
-	for _, v := range tableNames {
-		// 备份表结构
-		sql, err := backupTableStructure(v, d.Db)
-		if err != nil {
-			return err
-		}
-		backupSQL.WriteString(sql)
-
-		// 备份表数据
-		tableDataSQL, err := backupTableData(v, d.Db)
-		if err != nil {
-			return err
-		}
-		backupSQL.WriteString(tableDataSQL)
-	}
-
-	// 创建目录（如果不存在）
-	if err := file.FileMkDir(path); err != nil {
-		return err
-	}
-
-	// 将备份内容写入文件
-	file, err := os.Create(path)
+	file, err := os.Create(db.path)
 	if err != nil {
-		return err
+		return fmt.Errorf("无法创建备份文件：%w", err)
 	}
 	defer file.Close()
 
-	_, err = file.WriteString(backupSQL.String())
+	file.WriteString("USE `" + db.config.DBName + "`;\n\n")
+
+	tables, err := getTables(db.Db)
 	if err != nil {
-		return err
+		return fmt.Errorf("获取表列表失败：%w", err)
+	}
+
+	for _, table := range tables {
+		file.WriteString("DROP TABLE IF EXISTS `" + table + "`;\n")
+		createTableSQL, err := getCreateTableSQL(db.Db, table)
+		if err != nil {
+			return fmt.Errorf("获取表 %s 结构失败：%w", table, err)
+		}
+		file.WriteString(createTableSQL + ";\n")
+
+		// 使用事务批量插入数据
+		tx, err := db.Db.Begin()
+		if err != nil {
+			return fmt.Errorf("启动事务失败：%w", err)
+		}
+
+		rows, err := tx.Query(fmt.Sprintf("SELECT * FROM %s", table))
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("查询表 %s 数据失败：%w", table, err)
+		}
+		defer rows.Close()
+
+		columns, err := rows.Columns()
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("获取表 %s 列信息失败：%w", table, err)
+		}
+
+		var insertSQL strings.Builder
+		for rows.Next() {
+			values := make([]any, len(columns))
+			pointers := make([]any, len(columns))
+			for i := range values {
+				pointers[i] = &values[i]
+			}
+
+			if err := rows.Scan(pointers...); err != nil {
+				tx.Rollback()
+				return fmt.Errorf("读取表 %s 数据失败：%w", table, err)
+			}
+
+			if insertSQL.Len() == 0 {
+				insertSQL.WriteString("INSERT INTO `" + table + "` (`" + strings.Join(columns, "`, `") + "`) VALUES \n\t(")
+			} else {
+				insertSQL.WriteString(",\n\t(")
+			}
+
+			for i, value := range values {
+				if i > 0 {
+					insertSQL.WriteString(", ")
+				}
+				switch v := value.(type) {
+				case []byte:
+					insertSQL.WriteString(fmt.Sprintf("'%s'", string(v)))
+				case string:
+					insertSQL.WriteString(fmt.Sprintf("'%s'", v))
+				case time.Time:
+					insertSQL.WriteString(fmt.Sprintf("'%s'", v.Format("2006-01-02 15:04:05")))
+				case nil:
+					insertSQL.WriteString("NULL")
+				default:
+					insertSQL.WriteString(fmt.Sprintf("%v", v))
+				}
+			}
+			insertSQL.WriteString(")")
+		}
+
+		if insertSQL.Len() > 0 {
+			insertSQL.WriteString(";\n\n")
+			file.WriteString(insertSQL.String())
+		}
+
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("提交事务失败：%w", err)
+		}
 	}
 
 	return nil
 }
 
-type TableInfo struct {
-	Table       string `gorm:"column:Table"`
-	CreateTable string `gorm:"column:Create Table"`
-}
-
-func backupTableStructure(tableName string, db *gorm.DB) (string, error) {
-	var createTableSQL TableInfo
-	err := db.Raw("SHOW CREATE TABLE " + tableName).Scan(&createTableSQL).Error
+// 获取数据库中的所有表
+func getTables(db *sql.DB) ([]string, error) {
+	rows, err := db.Query("SHOW TABLES")
 	if err != nil {
-		return "", err
-	}
-	return "DROP TABLE IF EXISTS `" + tableName + "`;\n" + createTableSQL.CreateTable + ";\n\n", nil
-}
-
-func backupTableData(tableName string, db *gorm.DB) (string, error) {
-	var (
-		dataSQL  strings.Builder
-		has_data = false
-		i        = 0
-	)
-	rows, err := db.Raw("SELECT * FROM " + tableName).Rows()
-	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer rows.Close()
 
-	columns, err := rows.Columns()
+	var tables []string
+	for rows.Next() {
+		var table string
+		if err := rows.Scan(&table); err != nil {
+			return nil, err
+		}
+		tables = append(tables, table)
+	}
+	return tables, nil
+}
+
+// 获取表的 CREATE TABLE 语句
+func getCreateTableSQL(db *sql.DB, table string) (string, error) {
+	var tableSQL string
+	err := db.QueryRow(fmt.Sprintf("SHOW CREATE TABLE %s", table)).Scan(&table, &tableSQL)
 	if err != nil {
 		return "", err
 	}
-
-	for rows.Next() {
-		// 每 1000 条数据生成一个 INSERT 语句
-		if i%1000 == 0 {
-			if i > 0 {
-				dataSQL.WriteString(";\n")
-			}
-			dataSQL.WriteString("INSERT INTO `" + tableName + "` (`" + strings.Join(columns, "`, `") + "`) VALUES \n\t(")
-		} else {
-			dataSQL.WriteString(",\n\t(")
-		}
-		has_data = true
-		values := make([]any, len(columns))
-		valuePtrs := make([]any, len(columns))
-		for i := range values {
-			valuePtrs[i] = &values[i]
-		}
-		err = rows.Scan(valuePtrs...)
-		if err != nil {
-			return "", err
-		}
-		for i, value := range values {
-			if i > 0 {
-				dataSQL.WriteString(", ")
-			}
-			if value == nil {
-				dataSQL.WriteString("NULL")
-			} else {
-				val := reflect.ValueOf(value)
-				switch val.Kind() {
-				case reflect.String:
-					dataSQL.WriteString("'" + fmt.Sprintf("%s", value) + "'")
-				case reflect.Struct:
-					// 判断是否是 time.Time 类型
-					if t, ok := value.(time.Time); ok {
-						// 将时间格式化为 SQL 支持的格式
-						dataSQL.WriteString("'" + t.Format("2006-01-02 15:04:05") + "'")
-					} else {
-						dataSQL.WriteString(fmt.Sprintf("'%v'", value))
-					}
-				default:
-					dataSQL.WriteString(fmt.Sprintf("'%s'", value))
-				}
-			}
-		}
-		dataSQL.WriteString(")")
-		i++
-	}
-
-	if has_data {
-		return dataSQL.String() + ";\n\n", nil
-	} else {
-		return "", nil
-	}
+	return tableSQL, nil
 }
 
-func (d *DbBackup) Reduction(path string) error {
-	// 读取SQL文件
-	content, err := os.ReadFile(path)
+// 恢复数据库
+func (db *Backup) Restore() error {
+	defer db.Db.Close()
+	file, err := os.Open(db.path)
 	if err != nil {
-		return err
+		return fmt.Errorf("无法打开备份文件：%w", err)
+	}
+	defer file.Close()
+
+	tx, err := db.Db.Begin()
+	if err != nil {
+		return fmt.Errorf("启动事务失败：%w", err)
 	}
 
-	// 将SQL文件内容按分号分割成多个SQL语句
-	sqlStatements := strings.Split(string(content), ";")
+	scanner := bufio.NewScanner(file)
+	var sqlBuffer strings.Builder
 
-	// 执行每个SQL语句
-	for _, sql := range sqlStatements {
-		sql = strings.TrimSpace(sql)
-		if sql == "" {
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.TrimSpace(line) == "" || strings.HasPrefix(strings.TrimSpace(line), "--") {
 			continue
 		}
-		if err := d.Db.Exec(sql).Error; err != nil {
-			return err
+
+		sqlBuffer.WriteString(line)
+		if strings.HasSuffix(strings.TrimSpace(line), ";") {
+			_, err := tx.Exec(sqlBuffer.String())
+			if err != nil {
+				tx.Rollback()
+				return fmt.Errorf("执行 SQL 语句失败: %w\nSQL：%s", err, sqlBuffer.String())
+			}
+			sqlBuffer.Reset()
+		} else {
+			sqlBuffer.WriteString(" ")
 		}
 	}
+
+	if err := scanner.Err(); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("读取备份文件失败：%w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("提交事务失败：%w", err)
+	}
+
 	return nil
 }

@@ -3,64 +3,43 @@ package database
 import (
 	"errors"
 	"fmt"
-	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/ligaolin/gin_lin/utils"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-func (d *Mysql) Model(id *uint32, param any, m any) error {
-	if id != nil {
-		if err := d.Db.First(m, *id).Error; err != nil {
-			return errors.New("不存在的数据")
+type Mysql struct {
+	Db *gorm.DB
+}
+
+func NewMysql(cfg MysqlConfig) (*Mysql, error) {
+	db, err := gorm.Open(mysql.Open(
+		fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%s&loc=%s",
+			cfg.User,
+			cfg.Password,
+			cfg.Host,
+			cfg.Port,
+			cfg.DBName,
+			cfg.Charset,
+			cfg.ParseTime,
+			cfg.Loc,
+		)), &gorm.Config{})
+	return &Mysql{Db: db}, err
+}
+
+func (d *Mysql) Model(id uint, param any, m any) error {
+	if id != 0 {
+		if err := d.Db.First(m, id).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return errors.New("不存在的数据")
+			} else {
+				return err
+			}
 		}
 	}
 	utils.AssignFields(param, m)
 	return nil
-}
-
-type Where struct {
-	Name     string
-	Op       string
-	Value    *string
-	Nullable bool
-}
-
-func (d *Mysql) ToWhere(data []Where) string {
-	var sql []string
-	for _, v := range data {
-		if v.Nullable || (!v.Nullable && v.Value != nil && *v.Value != "") {
-			switch v.Op {
-			case "in":
-				sql = append(sql, fmt.Sprintf("%s in ('%s')", v.Name, utils.StringToString(*v.Value, ",", "','")))
-			case "like":
-				sql = append(sql, fmt.Sprintf("%s like '%%%s%%'", v.Name, *v.Value))
-			case "notLike":
-				sql = append(sql, fmt.Sprintf("%s not like '%%%s%%'", v.Name, *v.Value))
-			case "null":
-				sql = append(sql, fmt.Sprintf("%s is null", v.Name))
-			case "notNull":
-				sql = append(sql, fmt.Sprintf("%s is not null", v.Name))
-			case "set":
-				sql = append(sql, fmt.Sprintf("FIND_IN_SET('%s','%s')", *v.Value, v.Name))
-			case "!=":
-				sql = append(sql, fmt.Sprintf("%s != '%s'", v.Name, *v.Value))
-			case ">":
-				sql = append(sql, fmt.Sprintf("%s > '%s'", v.Name, *v.Value))
-			case ">=":
-				sql = append(sql, fmt.Sprintf("%s >= '%s'", v.Name, *v.Value))
-			case "<":
-				sql = append(sql, fmt.Sprintf("%s < '%s'", v.Name, *v.Value))
-			case "<=":
-				sql = append(sql, fmt.Sprintf("%s <= '%s'", v.Name, *v.Value))
-			default:
-				sql = append(sql, fmt.Sprintf("%s = '%s'", v.Name, *v.Value))
-			}
-
-		}
-	}
-	return strings.Join(sql, " AND ")
 }
 
 type Query struct {
@@ -122,17 +101,15 @@ func (d *Mysql) List(q Query, model any, data any) (map[string]any, error) {
 	}, nil
 }
 
-func (d *Mysql) Edit(id *uint32, m any, same_data []Same) (string, error) {
-	err := same(same_data, id, m, d.Db)
+func (d *Mysql) Edit(id uint, m any, sa []Same) error {
+	err := same(d.Db, sa, id, m)
 	if err != nil {
-		return "", err
+		return err
 	}
-	if id == nil {
-		err := d.Db.Create(m).Error
-		return "添加成功", err
+	if id == 0 {
+		return d.Db.Create(m).Error
 	} else {
-		err := d.Db.Save(m).Error
-		return "编辑成功", err
+		return d.Db.Save(m).Error
 	}
 }
 
@@ -141,13 +118,13 @@ type Same struct {
 	Message string
 }
 
-func same(data []Same, id *uint32, model any, db *gorm.DB) error {
+func same(db *gorm.DB, data []Same, id uint, model any) error {
 	var (
 		count int64
 	)
 	for _, v := range data {
-		if id != nil {
-			v.Sql += fmt.Sprintf(" AND id != %d", *id)
+		if id != 0 {
+			v.Sql += fmt.Sprintf(" AND id != %d", id)
 		}
 		db.Model(&model).Where(v.Sql).Count(&count)
 		if count > 0 {
@@ -157,39 +134,39 @@ func same(data []Same, id *uint32, model any, db *gorm.DB) error {
 	return nil
 }
 
-type UpdateParam struct {
-	Id    *uint32 `json:"id"`
-	Field *string `json:"field"`
-	Value *any    `json:"value"`
-}
+// type UpdateParam struct {
+// 	Id    uint    `json:"id"`
+// 	Field *string `json:"field"`
+// 	Value *any    `json:"value"`
+// }
 
-func (d *Mysql) Update(c *gin.Context, has []string, before any, after any) (param UpdateParam, err error) {
-	if err = c.Bind(&param); err != nil {
-		return
-	}
-	if param.Id == nil || *param.Id == 0 {
-		err = errors.New("id必须")
-		return
-	}
-	if param.Field == nil || *param.Field == "" {
-		err = errors.New("field必须")
-		return
-	}
-	if param.Value == nil {
-		err = errors.New("value必须")
-		return
-	}
-	if !utils.Contains(has, *param.Field) {
-		err = errors.New("field数据不合法")
-		return
-	}
-	if err = d.Db.First(before, *param.Id).Error; err != nil {
-		err = errors.New("不存在的数据")
-		return
-	}
-	err = d.Db.Model(after).Where("id = ?", *param.Id).Update(*param.Field, *param.Value).Error
-	return
-}
+// func (d *Mysql) Update(c *gin.Context, has []string, before any, after any) (param UpdateParam, err error) {
+// 	if err = c.Bind(&param); err != nil {
+// 		return
+// 	}
+// 	if param.Id == nil || *param.Id == 0 {
+// 		err = errors.New("id必须")
+// 		return
+// 	}
+// 	if param.Field == nil || *param.Field == "" {
+// 		err = errors.New("field必须")
+// 		return
+// 	}
+// 	if param.Value == nil {
+// 		err = errors.New("value必须")
+// 		return
+// 	}
+// 	if !utils.Contains(has, *param.Field) {
+// 		err = errors.New("field数据不合法")
+// 		return
+// 	}
+// 	if err = d.Db.First(before, *param.Id).Error; err != nil {
+// 		err = errors.New("不存在的数据")
+// 		return
+// 	}
+// 	err = d.Db.Model(after).Where("id = ?", *param.Id).Update(*param.Field, *param.Value).Error
+// 	return
+// }
 
 type FindChildrenIdParam struct {
 	Ids     *[]uint32
