@@ -214,34 +214,61 @@ func TestList(t *testing.T) {
 			PageSize: param.PageSize,
 			Where:    where,
 			Order:    param.Order,
+			PIDName:  "pid",
+		}, m)
+		if err != nil {
+			utils.Error(c, err.Error())
+			return
+		}
+
+		utils.Success(c, "查询完成", data)
+	})
+	router.Run()
+}
+
+type FindChildrenParam struct {
+	PID   any    `form:"pid"`
+	Title string `form:"title"`
+	Order string `form:"order"`
+}
+
+func TestFindChildren(t *testing.T) {
+	router := gin.Default()
+	router.GET("/api/model_children", func(c *gin.Context) {
+		db, err := db()
+		if err != nil {
+			utils.Error(c, err.Error())
+			return
+		}
+		var (
+			m     []Region
+			param FindChildrenParam
+		)
+		// 绑定参数
+		if err := utils.Get(c, &param); err != nil {
+			utils.Error(c, err.Error())
+			return
+		}
+		// 查询数据
+		where, err := ToWhere([]Where{
+			{Name: "title", Op: "like", Value: param.Title},
+		})
+		if err != nil {
+			utils.Error(c, err.Error())
+			return
+		}
+		err = db.FindChildren(FindChildren{
+			PID:     param.PID,
+			PIDName: "pid",
+			Where:   where,
+			Order:   param.Order,
 		}, &m)
 		if err != nil {
 			utils.Error(c, err.Error())
 			return
 		}
 
-		if dataInterface, ok := data.Data.([]Region); ok {
-			for i, v := range dataInterface {
-				var (
-					total int64
-					w     string
-				)
-				if where == "" {
-					w = fmt.Sprintf("pid = %d", v.ID)
-				} else {
-					w = where + fmt.Sprintf(" AND pid = %d", v.ID)
-				}
-				if err := db.Db.Model(&v).Where(w).Count(&total).Error; err != nil {
-					utils.Error(c, err.Error())
-					return
-				}
-				if total > 0 {
-					dataInterface[i].HasChildren = true
-				}
-			}
-		}
-
-		utils.Success(c, "查询完成", data)
+		utils.Success(c, "查询完成", m)
 	})
 	router.Run()
 }

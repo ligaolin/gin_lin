@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/ligaolin/gin_lin/utils"
 	"gorm.io/driver/mysql"
@@ -192,12 +193,15 @@ type ListData struct {
 }
 
 type List struct {
-	Page     int
-	PageSize int
-	Order    string
-	Where    string
-	Joins    string
-	Select   string
+	Page            int
+	PageSize        int
+	Order           string
+	Where           string
+	Joins           string
+	Select          string
+	PIDName         string
+	HasChildrenName string
+	IDName          string
 }
 
 // 列表
@@ -229,7 +233,7 @@ func (d *Mysql) List(l List, m any) (ListData, error) {
 	if l.Select != "" {
 		db.Select(l.Select)
 	}
-	if err := db.Find(data.Data).Error; err != nil {
+	if err := db.Find(&data.Data).Error; err != nil {
 		return data, err
 	}
 	if err := total_db.Count(&data.Total).Error; err != nil {
@@ -239,6 +243,55 @@ func (d *Mysql) List(l List, m any) (ListData, error) {
 		data.TotalPage = data.Total / int64(l.PageSize)
 		if data.Total%int64(l.PageSize) != 0 {
 			data.TotalPage++
+		}
+	}
+
+	if l.PIDName != "" {
+		// 使用反射动态处理 HasChildren 字段
+		sliceValue := reflect.ValueOf(data.Data)
+		if sliceValue.Kind() == reflect.Slice {
+			for i := range sliceValue.Len() {
+				item := sliceValue.Index(i)
+				if item.Kind() == reflect.Ptr {
+					item = item.Elem()
+				}
+
+				// 检查是否存在 HasChildren 字段
+				var hasChildrenField reflect.Value
+				if l.HasChildrenName != "" {
+					hasChildrenField = item.FieldByName(l.HasChildrenName)
+				} else {
+					hasChildrenField = item.FieldByName("HasChildren")
+				}
+				if hasChildrenField.IsValid() && hasChildrenField.CanSet() {
+					var (
+						total   int64
+						w       string
+						idField reflect.Value
+					)
+					if l.IDName != "" {
+						idField = item.FieldByName(l.IDName)
+					} else {
+						idField = item.FieldByName("ID")
+					}
+					if idField.IsValid() {
+						id := idField.Interface()
+						if l.Where == "" {
+							w = fmt.Sprintf(l.PIDName+" = %v", id)
+						} else {
+							w = l.Where + fmt.Sprintf(" AND %s = %v", l.PIDName, id)
+						}
+						if err := d.Db.Model(m).Where(w).Count(&total).Error; err != nil {
+							return data, err
+						}
+						if total > 0 {
+							hasChildrenField.SetBool(true)
+						} else {
+							hasChildrenField.SetBool(false)
+						}
+					}
+				}
+			}
 		}
 	}
 	return data, nil
@@ -256,4 +309,94 @@ func (d *Mysql) Code(n int, field string, m any) (string, error) {
 			}
 		}
 	}
+}
+
+type FindChildren struct {
+	PID          any    // 父节点 ID
+	PIDName      string // 父节点 ID 字段名
+	Where        string // 查询条件
+	Order        string // 排序条件
+	IDName       string
+	ChildrenName string
+}
+
+func (d *Mysql) FindChildren(param FindChildren, m any) error {
+	// 获取反射值
+	sliceValue := reflect.ValueOf(m)
+	if sliceValue.Kind() != reflect.Ptr || sliceValue.Elem().Kind() != reflect.Slice {
+		return fmt.Errorf("m must be a pointer to a slice")
+	}
+
+	// 获取切片元素类型
+	elemType := sliceValue.Elem().Type().Elem()
+	if elemType.Kind() == reflect.Ptr {
+		elemType = elemType.Elem()
+	}
+
+	// 构建查询
+	db := d.Db.Model(m)
+	if param.Where == "" {
+		db = db.Where(fmt.Sprintf("%s = ?", param.PIDName), param.PID)
+	} else {
+		db = db.Where(param.Where+fmt.Sprintf(" AND %s = ?", param.PIDName), param.PID)
+	}
+	if param.Order != "" {
+		db = db.Order(param.Order)
+	}
+
+	// 执行查询
+	if err := db.Find(m).Error; err != nil {
+		return err
+	}
+	fmt.Println("mmmmm", m)
+
+	// 递归查询子节点
+	slice := sliceValue.Elem()
+	for i := range slice.Len() {
+		item := slice.Index(i)
+		if item.Kind() == reflect.Ptr {
+			item = item.Elem()
+		}
+
+		// 获取当前节点的 ID
+		var idField reflect.Value
+		if param.IDName != "" {
+			idField = item.FieldByName(param.IDName)
+		} else {
+			idField = item.FieldByName("ID")
+		}
+		if !idField.IsValid() {
+			return fmt.Errorf("model must have an ID field")
+		}
+		id := idField.Interface()
+
+		// 获取 Children 字段
+		var childrenField reflect.Value
+		if param.ChildrenName != "" {
+			childrenField = item.FieldByName(param.ChildrenName)
+		} else {
+			childrenField = item.FieldByName("Children")
+		}
+		if !childrenField.IsValid() || !childrenField.CanSet() {
+			return fmt.Errorf("model must have a Children field that can be set")
+		}
+
+		// 创建子节点切片
+		childrenSlice := reflect.New(reflect.SliceOf(elemType)).Interface()
+
+		// 递归查询子节点
+		if err := d.FindChildren(FindChildren{
+			PID:     id,
+			PIDName: param.PIDName,
+			Where:   param.Where,
+			Order:   param.Order,
+		}, childrenSlice); err != nil {
+			return err
+		}
+
+		// 设置 Children 字段
+		childrenField.Set(reflect.ValueOf(childrenSlice).Elem())
+	}
+
+	return nil
 }
