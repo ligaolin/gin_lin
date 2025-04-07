@@ -30,14 +30,14 @@ func AssignFields(a any, b any) error {
 
 	// 缓存结构体 B 的字段信息
 	bFieldMap := make(map[string]reflect.Value)
-	for i := 0; i < reflectB.NumField(); i++ {
+	for i := range reflectB.NumField() {
 		field := reflectB.Field(i)
 		fieldName := reflectB.Type().Field(i).Name
 		bFieldMap[fieldName] = field
 	}
 
 	// 遍历结构体 A 的字段
-	for i := 0; i < reflectA.NumField(); i++ {
+	for i := range reflectA.NumField() {
 		fieldA := reflectA.Field(i)
 		fieldName := reflectA.Type().Field(i).Name
 

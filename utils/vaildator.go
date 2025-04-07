@@ -61,9 +61,24 @@ func Get(c *gin.Context, param any) error {
 func Validator(data any) error {
 	// 获取结构体的值
 	v := reflect.ValueOf(data)
-	t := reflect.TypeOf(data)
 
-	for i := range t.NumField() {
+	// 如果 data 是指针类型，解引用指针
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return fmt.Errorf("validator: expected a non-nil pointer, got nil")
+		}
+		v = v.Elem()
+	}
+
+	// 确保 data 是结构体类型
+	if v.Kind() != reflect.Struct {
+		return fmt.Errorf("validator: expected a struct, got %v", v.Kind())
+	}
+
+	t := v.Type()
+
+	// 遍历结构体字段
+	for i := 0; i < t.NumField(); i++ {
 		fieldValue := v.Field(i)
 		// 如果字段是指针类型，解引用指针
 		if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() {
@@ -71,6 +86,7 @@ func Validator(data any) error {
 		}
 		value := fmt.Sprintf("%v", fieldValue)
 
+		// 解析字段的 validate 标签
 		for _, tags := range strings.Split(t.Field(i).Tag.Get("validate"), " ") {
 			tag := strings.Split(tags, ":")
 			if len(tag) < 2 {

@@ -37,11 +37,11 @@ func Contains(slice []string, str string) bool {
 	return false
 }
 
-// 字符串转切片，例如1,2,3转成[]uint32{1,2,3}
-func StringToSliceUint32(s string, split string) ([]uint32, error) {
+// 字符串转切片，例如1,2,3转成[]uint{1,2,3}
+func ToSliceUint(s any, split string) ([]uint, error) {
 	// 分割字符串
-	parts := strings.Split(s, split)
-	var result []uint32
+	parts := strings.Split(fmt.Sprintf("%v", s), split)
+	var result []uint
 
 	for _, part := range parts {
 		trimmedPart := strings.TrimSpace(part)
@@ -53,7 +53,7 @@ func StringToSliceUint32(s string, split string) ([]uint32, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error converting string to uint64: %v", err)
 		}
-		result = append(result, uint32(value))
+		result = append(result, uint(value))
 	}
 
 	return result, nil
