@@ -1,4 +1,4 @@
-package database
+package db
 
 type MysqlConfig struct {
 	User      string `json:"user" toml:"user" yaml:"user"`
