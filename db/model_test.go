@@ -275,7 +275,7 @@ func TestFindChildren(t *testing.T) {
 
 type Region struct {
 	IDCreatedAtUpdatedAt
-	Sort
+	SortStruct
 	Title string `json:"title" gorm:"not null;type:varchar(255)"`
 	HasChildrenStruct
 	ChildrenStruct[Region]

@@ -45,19 +45,19 @@ type IDCreatedAtUpdatedAtDeletedAt struct {
 }
 
 // 模型排序
-type Sort struct {
+type SortStruct struct {
 	Sort int32 `json:"sort" gorm:"type:int(11);default:100;comment:排序"`
 }
 
 // 模型状态
-type State struct {
+type StateStruct struct {
 	State string `json:"state" gorm:"type:varchar(5);default:开启;comment:状态"`
 }
 
 // 模型排序和状态
 type SortState struct {
-	Sort
-	State
+	SortStruct
+	StateStruct
 }
 
 // 模型基础字段
