@@ -56,7 +56,7 @@ func TestEdit(t *testing.T) {
 			return
 		}
 		// 添加或编辑数据
-		if err = db.Edit(m.ID, "id", &m, []Same{
+		if err = db.Edit(m.ID, "id", &m, []SameStruct{
 			{Sql: fmt.Sprintf("title = '%s'", m.Title), Message: "标题已存在"},
 		}); err != nil {
 			gin_lin.Error(c, err.Error())
@@ -91,7 +91,7 @@ func TestUpdate(t *testing.T) {
 			return
 		}
 		// 更新数据
-		if err = db.Update(Update{
+		if err = db.Update(UpdateStruct{
 			ID:    param.ID,
 			Field: param.Field,
 			Value: param.Value,
@@ -122,7 +122,7 @@ func TestDelete(t *testing.T) {
 			return
 		}
 		// 更新数据
-		ids, err := db.Delete(Delete{
+		ids, err := db.Delete(DeleteStruct{
 			ID: param.ID,
 		}, &m)
 		if err != nil {
@@ -152,7 +152,7 @@ func TestFirst(t *testing.T) {
 			return
 		}
 		// 查询数据
-		if err = db.First(First{
+		if err = db.First(FirstStruct{
 			ID: param.ID,
 		}, &m); err != nil {
 			gin_lin.Error(c, err.Error())
@@ -180,7 +180,7 @@ func TestModel(t *testing.T) {
 type ListParam struct {
 	Id    string `form:"id"`
 	Title string `form:"title"`
-	ListBase
+	ListParamBase
 }
 
 func TestList(t *testing.T) {
@@ -209,7 +209,7 @@ func TestList(t *testing.T) {
 			gin_lin.Error(c, err.Error())
 			return
 		}
-		data, err := db.List(List{
+		data, err := db.List(ListStruct{
 			Page:     param.Page,
 			PageSize: param.PageSize,
 			Where:    where,
@@ -257,7 +257,7 @@ func TestFindChildren(t *testing.T) {
 			gin_lin.Error(c, "生成where查询语句错误"+err.Error())
 			return
 		}
-		err = db.FindChildren(FindChildren{
+		err = db.FindChildren(FindChildrenStruct{
 			PID:     param.PID,
 			PIDName: "pid",
 			Where:   where,
@@ -285,7 +285,7 @@ type News struct {
 	IDCreatedAtUpdatedAtDeletedAtSortState
 	Title   string     `json:"title" gorm:"not null;type:varchar(255)"`
 	Type    string     `json:"type" gorm:"not null;type:varchar(20)"`
-	Thumb   *file.File `json:"thumb" gorm:"serializer:json;type:longtext"`
+	Thumb   *file.File `json:"thumb" gorm:"serializer:json;type:text"`
 	Desc    *string    `json:"desc" gorm:"type:varchar(255)"`
 	Content *string    `json:"content" gorm:"type:text"`
 }

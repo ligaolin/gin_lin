@@ -45,7 +45,7 @@ func (d *Mysql) Model(id uint, param any, m any) error {
 }
 
 // 添加或编辑
-func (d *Mysql) Edit(id uint, id_name string, m any, sa []Same) error {
+func (d *Mysql) Edit(id uint, id_name string, m any, sa []SameStruct) error {
 	err := d.Same(id, id_name, m, sa)
 	if err != nil {
 		return err
@@ -57,13 +57,13 @@ func (d *Mysql) Edit(id uint, id_name string, m any, sa []Same) error {
 	}
 }
 
-type Same struct {
+type SameStruct struct {
 	Sql     string
 	Message string
 }
 
 // 判断数据是否重复
-func (d *Mysql) Same(id uint, id_name string, model any, data []Same) error {
+func (d *Mysql) Same(id uint, id_name string, model any, data []SameStruct) error {
 	var count int64
 	for _, v := range data {
 		if id != 0 {
@@ -77,7 +77,7 @@ func (d *Mysql) Same(id uint, id_name string, model any, data []Same) error {
 	return nil
 }
 
-type Update struct {
+type UpdateStruct struct {
 	ID     uint
 	IDName string
 	Field  string
@@ -85,7 +85,7 @@ type Update struct {
 }
 
 // 更新
-func (d *Mysql) Update(param Update, m any, has []string) (err error) {
+func (d *Mysql) Update(param UpdateStruct, m any, has []string) (err error) {
 	if param.ID == 0 {
 		return errors.New("id必须")
 	}
@@ -108,14 +108,14 @@ func (d *Mysql) Update(param Update, m any, has []string) (err error) {
 	return d.Db.Model(m).Where(param.IDName+" = ?", param.ID).Update(param.Field, param.Value).Error
 }
 
-type Delete struct {
+type DeleteStruct struct {
 	ID      any
 	PIDName string
 	IDName  string
 }
 
 // 当没有上级时pid_name和id_name都设为""
-func (d *Mysql) Delete(param Delete, m any) ([]uint, error) {
+func (d *Mysql) Delete(param DeleteStruct, m any) ([]uint, error) {
 	if param.IDName == "" {
 		param.IDName = "id"
 	}
@@ -124,7 +124,7 @@ func (d *Mysql) Delete(param Delete, m any) ([]uint, error) {
 		return nil, err
 	}
 	if param.PIDName != "" {
-		if err = d.FindChildrenId(FindChildrenId{IDs: &ids, PIDName: param.PIDName, IDName: param.IDName}, m); err != nil {
+		if err = d.FindChildrenId(FindChildrenIdStruct{IDs: &ids, PIDName: param.PIDName, IDName: param.IDName}, m); err != nil {
 			return nil, err
 		}
 	}
@@ -135,19 +135,19 @@ func (d *Mysql) Delete(param Delete, m any) ([]uint, error) {
 	return ids, nil
 }
 
-type FindChildrenId struct {
+type FindChildrenIdStruct struct {
 	IDs     *[]uint
 	PIDName string
 	IDName  string
 }
 
-func (d *Mysql) FindChildrenId(f FindChildrenId, m any) error {
+func (d *Mysql) FindChildrenId(f FindChildrenIdStruct, m any) error {
 	var cids []uint
 	if err := d.Db.Model(&m).Where(f.PIDName+" IN ?", *f.IDs).Pluck(f.IDName, &cids).Error; err != nil {
 		return err
 	}
 	if len(cids) > 0 {
-		err := d.FindChildrenId(FindChildrenId{IDs: &cids, PIDName: f.PIDName, IDName: f.IDName}, m)
+		err := d.FindChildrenId(FindChildrenIdStruct{IDs: &cids, PIDName: f.PIDName, IDName: f.IDName}, m)
 		if err != nil {
 			return err
 		}
@@ -156,14 +156,14 @@ func (d *Mysql) FindChildrenId(f FindChildrenId, m any) error {
 	return nil
 }
 
-type First struct {
+type FirstStruct struct {
 	ID     uint
 	Joins  string
 	Select string
 	IDName string
 }
 
-func (d *Mysql) First(f First, m any) error {
+func (d *Mysql) First(f FirstStruct, m any) error {
 	if f.IDName == "" {
 		f.IDName = "id"
 	}
@@ -192,7 +192,7 @@ type ListData struct {
 	PageSize  int   `json:"page_size"`
 }
 
-type List struct {
+type ListStruct struct {
 	Page            int
 	PageSize        int
 	Order           string
@@ -205,7 +205,7 @@ type List struct {
 }
 
 // 列表
-func (d *Mysql) List(l List, m any) (ListData, error) {
+func (d *Mysql) List(l ListStruct, m any) (ListData, error) {
 	var (
 		db       = d.Db.Model(m).Where(l.Where)
 		total_db = d.Db.Model(m).Where(l.Where)
@@ -311,7 +311,7 @@ func (d *Mysql) Code(n int, field string, m any) (string, error) {
 	}
 }
 
-type FindChildren struct {
+type FindChildrenStruct struct {
 	PID          any    // 父节点 ID
 	PIDName      string // 父节点 ID 字段名
 	Where        string // 查询条件
@@ -320,7 +320,7 @@ type FindChildren struct {
 	ChildrenName string
 }
 
-func (d *Mysql) FindChildren(param FindChildren, m any) error {
+func (d *Mysql) FindChildren(param FindChildrenStruct, m any) error {
 	// 获取反射值
 	sliceValue := reflect.ValueOf(m)
 	if sliceValue.Kind() != reflect.Ptr || sliceValue.Elem().Kind() != reflect.Slice {
@@ -384,7 +384,7 @@ func (d *Mysql) FindChildren(param FindChildren, m any) error {
 		childrenSlice := reflect.New(reflect.SliceOf(elemType)).Interface()
 
 		// 递归查询子节点
-		if err := d.FindChildren(FindChildren{
+		if err := d.FindChildren(FindChildrenStruct{
 			PID:     id,
 			PIDName: param.PIDName,
 			Where:   param.Where,

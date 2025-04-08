@@ -25,7 +25,7 @@ type DeleteParam struct {
 type FirstParam struct {
 	ID uint `form:"id" validate:"required:主键值必须"`
 }
-type ListBase struct {
+type ListParamBase struct {
 	Page     int    `form:"page"`
 	PageSize int    `form:"page_size"`
 	Order    string `form:"order"`
@@ -33,25 +33,25 @@ type ListBase struct {
 
 // 模型基础字段
 type IDCreatedAtUpdatedAt struct {
-	ID        uint  `json:"id" gorm:"primarykey"`
-	CreatedAt *Time `json:"created_at"`
-	UpdatedAt *Time `json:"updated_at"`
+	ID        uint  `json:"id" gorm:"primarykey;comment:ID"`
+	CreatedAt *Time `json:"created_at" gorm:"comment:创建时间"`
+	UpdatedAt *Time `json:"updated_at" gorm:"comment:更新时间"`
 }
 
 // 模型基础字段
 type IDCreatedAtUpdatedAtDeletedAt struct {
 	IDCreatedAtUpdatedAt
-	DeletedAt *Time `json:"deleted_at" gorm:"index"`
+	DeletedAt *Time `json:"deleted_at" gorm:"index;comment:删除时间"`
 }
 
 // 模型排序
 type Sort struct {
-	Sort int32 `json:"sort" gorm:"default:100"`
+	Sort int32 `json:"sort" gorm:"type:int(11);default:100;comment:排序"`
 }
 
 // 模型状态
 type State struct {
-	State string `json:"state" gorm:"default:开启;type:varchar(5)"`
+	State string `json:"state" gorm:"type:varchar(5);default:开启;comment:状态"`
 }
 
 // 模型排序和状态
@@ -78,4 +78,9 @@ type HasChildrenStruct struct {
 
 type ChildrenStruct[T any] struct {
 	Children []T `json:"children" gorm:"-:all;default:false"`
+}
+
+type PIDLevel struct {
+	PID   uint `json:"pid" gorm:"type:int(11);default:0;comment:父级id"`
+	Level uint `json:"level" gorm:"type:int(2);default:1;comment:层级"`
 }
