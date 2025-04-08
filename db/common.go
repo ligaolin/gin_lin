@@ -77,7 +77,7 @@ type HasChildrenStruct struct {
 }
 
 type ChildrenStruct[T any] struct {
-	Children []T `json:"children" gorm:"-:all;default:false"`
+	Children []T `json:"children" gorm:"-:all;"`
 }
 
 type PIDLevel struct {
