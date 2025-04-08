@@ -44,17 +44,11 @@ func (d *Mysql) Model(id uint, param any, m any) error {
 	return nil
 }
 
-// 添加或编辑
-func (d *Mysql) Edit(id uint, id_name string, m any, sa []SameStruct) error {
-	err := d.Same(id, id_name, m, sa)
-	if err != nil {
-		return err
-	}
-	if id == 0 {
-		return d.Db.Create(m).Error
-	} else {
-		return d.Db.Save(m).Error
-	}
+type EditStruct struct {
+	ID     uint
+	IDName string
+	Model  any
+	Same   []SameStruct
 }
 
 type SameStruct struct {
@@ -62,19 +56,24 @@ type SameStruct struct {
 	Message string
 }
 
-// 判断数据是否重复
-func (d *Mysql) Same(id uint, id_name string, model any, data []SameStruct) error {
+// 添加或编辑
+func (d *Mysql) Edit(param EditStruct) error {
 	var count int64
-	for _, v := range data {
-		if id != 0 {
-			v.Sql += fmt.Sprintf(" AND %s != %d", id_name, id)
+	if param.IDName == "" {
+		param.IDName = "id"
+	}
+	for _, v := range param.Same {
+		if param.ID != 0 {
+			v.Sql += fmt.Sprintf(" AND %s != %d", param.IDName, param.ID)
 		}
-		d.Db.Model(&model).Where(v.Sql).Count(&count)
+		if err := d.Db.Model(&param.Model).Where(v.Sql).Count(&count).Error; err != nil {
+			return err
+		}
 		if count > 0 {
 			return errors.New(v.Message)
 		}
 	}
-	return nil
+	return d.Db.Save(param.Model).Error
 }
 
 type UpdateStruct struct {

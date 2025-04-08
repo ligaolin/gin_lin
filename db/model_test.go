@@ -11,11 +11,11 @@ import (
 
 func db() (*Mysql, error) {
 	return NewMysql(MysqlConfig{
-		User:      "",
-		Password:  "",
-		Host:      "",
+		User:      "root",
+		Password:  "12345678f",
+		Host:      "134.175.182.204",
 		Port:      3306,
-		DBName:    "",
+		DBName:    "wp",
 		Charset:   "utf8mb4",
 		ParseTime: "True",
 		Loc:       "Local",
@@ -56,8 +56,12 @@ func TestEdit(t *testing.T) {
 			return
 		}
 		// 添加或编辑数据
-		if err = db.Edit(m.ID, "id", &m, []SameStruct{
-			{Sql: fmt.Sprintf("title = '%s'", m.Title), Message: "标题已存在"},
+		if err = db.Edit(EditStruct{
+			ID:    m.ID,
+			Model: &m,
+			Same: []SameStruct{
+				{Sql: fmt.Sprintf("title = '%s'", m.Title), Message: "标题已存在"},
+			},
 		}); err != nil {
 			gin_lin.Error(c, err.Error())
 			return
