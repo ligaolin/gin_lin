@@ -46,7 +46,7 @@ func TestEdit(t *testing.T) {
 			param EditParam
 		)
 		// 绑定参数
-		if err := gin_lin.Get(c, &param); err != nil {
+		if err := gin_lin.ParamGet(c, &param); err != nil {
 			gin_lin.Error(c, err.Error())
 			return
 		}
@@ -86,7 +86,7 @@ func TestUpdate(t *testing.T) {
 			param UpdateParam
 		)
 		// 绑定参数
-		if err := gin_lin.Get(c, &param); err != nil {
+		if err := gin_lin.ParamGet(c, &param); err != nil {
 			gin_lin.Error(c, err.Error())
 			return
 		}
@@ -117,7 +117,7 @@ func TestDelete(t *testing.T) {
 			param DeleteParam
 		)
 		// 绑定参数
-		if err := gin_lin.Get(c, &param); err != nil {
+		if err := gin_lin.ParamGet(c, &param); err != nil {
 			gin_lin.Error(c, err.Error())
 			return
 		}
@@ -147,7 +147,7 @@ func TestFirst(t *testing.T) {
 			param FirstParam
 		)
 		// 绑定参数
-		if err := gin_lin.Get(c, &param); err != nil {
+		if err := gin_lin.ParamGet(c, &param); err != nil {
 			gin_lin.Error(c, err.Error())
 			return
 		}
@@ -196,7 +196,7 @@ func TestList(t *testing.T) {
 			param ListParam
 		)
 		// 绑定参数
-		if err := gin_lin.Get(c, &param); err != nil {
+		if err := gin_lin.ParamGet(c, &param); err != nil {
 			gin_lin.Error(c, err.Error())
 			return
 		}
@@ -245,7 +245,7 @@ func TestFindChildren(t *testing.T) {
 			param FindChildrenParam
 		)
 		// 绑定参数
-		if err := gin_lin.Get(c, &param); err != nil {
+		if err := gin_lin.ParamGet(c, &param); err != nil {
 			gin_lin.Error(c, "绑定参数错误"+err.Error())
 			return
 		}

@@ -47,7 +47,7 @@ var Rules = map[string]string{
 type Base any
 
 // 绑定参数并验证
-func Get(c *gin.Context, param any) error {
+func ParamGet(c *gin.Context, param any) error {
 	if err := c.Bind(param); err != nil {
 		return err
 	}
