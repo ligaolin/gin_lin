@@ -20,19 +20,22 @@ type Claims struct {
 }
 
 type Jwt struct {
+	Config JwtConfig
 }
 
 func NewJwt(cfg JwtConfig) *Jwt {
-	return &Jwt{}
+	return &Jwt{
+		Config: cfg,
+	}
 }
 
-func (j *Jwt) Set(id *uint32, types string, cfg JwtConfig) (string, error) {
+func (j *Jwt) Set(id *uint32, types string) (string, error) {
 	claims := Claims{
 		fmt.Sprintf("%d", *id),
 		types,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(cfg.Expir) * time.Minute)),
-			Issuer:    cfg.Issuer,
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(j.Config.Expir) * time.Minute)),
+			Issuer:    j.Config.Issuer,
 		},
 	}
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("AllYourBase"))

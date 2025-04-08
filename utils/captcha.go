@@ -19,13 +19,13 @@ type CaptchaConfig struct {
 }
 
 type Captcha struct {
-	Client *Client
+	Client *cache.Client
 	Config CaptchaConfig
 }
 
 func NewCaptcha(cfg CaptchaConfig, cacheCfg cache.CacheConfig) *Captcha {
 	return &Captcha{
-		Client: NewClient(cacheCfg),
+		Client: cache.NewClient(cacheCfg),
 		Config: cfg,
 	}
 }

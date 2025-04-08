@@ -72,10 +72,10 @@ type IDCreatedAtUpdatedAtSortState struct {
 	SortState
 }
 
-// type HasChildren struct {
-// 	HasChildren bool `json:"hasChildren" gorm:"-:all;default:false"`
-// }
+type HasChildrenStruct struct {
+	HasChildren bool `json:"hasChildren" gorm:"-:all;default:false"`
+}
 
-// type Children[T any] struct {
-// 	Children []T `json:"children" gorm:"-:all;default:false"`
-// }
+type ChildrenStruct[T any] struct {
+	Children []T `json:"children" gorm:"-:all;default:false"`
+}

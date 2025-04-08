@@ -78,7 +78,7 @@ func Validator(data any) error {
 	t := v.Type()
 
 	// 遍历结构体字段
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		fieldValue := v.Field(i)
 		// 如果字段是指针类型，解引用指针
 		if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() {

@@ -1,19 +1,18 @@
-package utils
+package cache
 
 import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ligaolin/gin_lin/cache"
 )
 
 type Client struct {
-	Cache cache.Cache
+	Cache Cache
 }
 
-func NewClient(cfg cache.CacheConfig) *Client {
+func NewClient(cfg CacheConfig) *Client {
 	return &Client{
-		Cache: *cache.NewCache(cfg),
+		Cache: *NewCache(cfg),
 	}
 }
 

@@ -11,11 +11,11 @@ import (
 
 func db() (*Mysql, error) {
 	return NewMysql(MysqlConfig{
-		User:      "root",
-		Password:  "12345678f",
-		Host:      "134.175.182.204",
+		User:      "",
+		Password:  "",
+		Host:      "",
 		Port:      3306,
-		DBName:    "wp",
+		DBName:    "",
 		Charset:   "utf8mb4",
 		ParseTime: "True",
 		Loc:       "Local",
@@ -23,12 +23,12 @@ func db() (*Mysql, error) {
 }
 
 type EditParam struct {
-	ID      uint             `json:"id"`
-	Title   string           `json:"title" validate:"required:标题必须 len=2,:标题长度不能小于2"`
-	Type    string           `json:"type"`
-	Thumb   *file.UploadFile `json:"thumb"`
-	Desc    *string          `json:"desc"`
-	Content *string          `json:"content"`
+	ID      uint       `json:"id"`
+	Title   string     `json:"title" validate:"required:标题必须 len=2,:标题长度不能小于2"`
+	Type    string     `json:"type"`
+	Thumb   *file.File `json:"thumb"`
+	Desc    *string    `json:"desc"`
+	Content *string    `json:"content"`
 }
 
 func TestEdit(t *testing.T) {
@@ -281,20 +281,13 @@ type Region struct {
 	ChildrenStruct[Region]
 }
 
-type HasChildrenStruct struct {
-	HasChildren bool `json:"hasChildren" gorm:"-:all;default:false"`
-}
-
-type ChildrenStruct[T any] struct {
-	Children []T `json:"children" gorm:"-:all;default:false"`
-}
 type News struct {
 	IDCreatedAtUpdatedAtDeletedAtSortState
-	Title   string           `json:"title" gorm:"not null;type:varchar(255)"`
-	Type    string           `json:"type" gorm:"not null;type:varchar(20)"`
-	Thumb   *file.UploadFile `json:"thumb" gorm:"serializer:json;type:longtext"`
-	Desc    *string          `json:"desc" gorm:"type:varchar(255)"`
-	Content *string          `json:"content" gorm:"type:text"`
+	Title   string     `json:"title" gorm:"not null;type:varchar(255)"`
+	Type    string     `json:"type" gorm:"not null;type:varchar(20)"`
+	Thumb   *file.File `json:"thumb" gorm:"serializer:json;type:longtext"`
+	Desc    *string    `json:"desc" gorm:"type:varchar(255)"`
+	Content *string    `json:"content" gorm:"type:text"`
 }
 
 type UploadFile struct {
