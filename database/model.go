@@ -348,7 +348,6 @@ func (d *Mysql) FindChildren(param FindChildren, m any) error {
 	if err := db.Find(m).Error; err != nil {
 		return err
 	}
-	fmt.Println("mmmmm", m)
 
 	// 递归查询子节点
 	slice := sliceValue.Elem()

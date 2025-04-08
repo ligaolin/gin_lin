@@ -227,17 +227,17 @@ func TestList(t *testing.T) {
 }
 
 type FindChildrenParam struct {
-	PID   any    `form:"pid"`
+	PID   uint   `form:"pid"`
 	Title string `form:"title"`
 	Order string `form:"order"`
 }
 
 func TestFindChildren(t *testing.T) {
 	router := gin.Default()
-	router.GET("/api/model_children", func(c *gin.Context) {
+	router.GET("/api/model/children", func(c *gin.Context) {
 		db, err := db()
 		if err != nil {
-			utils.Error(c, err.Error())
+			utils.Error(c, "连接数据库错误"+err.Error())
 			return
 		}
 		var (
@@ -246,7 +246,7 @@ func TestFindChildren(t *testing.T) {
 		)
 		// 绑定参数
 		if err := utils.Get(c, &param); err != nil {
-			utils.Error(c, err.Error())
+			utils.Error(c, "绑定参数错误"+err.Error())
 			return
 		}
 		// 查询数据
@@ -254,7 +254,7 @@ func TestFindChildren(t *testing.T) {
 			{Name: "title", Op: "like", Value: param.Title},
 		})
 		if err != nil {
-			utils.Error(c, err.Error())
+			utils.Error(c, "生成where查询语句错误"+err.Error())
 			return
 		}
 		err = db.FindChildren(FindChildren{
@@ -264,7 +264,7 @@ func TestFindChildren(t *testing.T) {
 			Order:   param.Order,
 		}, &m)
 		if err != nil {
-			utils.Error(c, err.Error())
+			utils.Error(c, "获取子级数据错误："+err.Error())
 			return
 		}
 
