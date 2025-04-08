@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ligaolin/gin_lin"
 	"github.com/ligaolin/gin_lin/file"
-	"github.com/ligaolin/gin_lin/utils"
 )
 
 func db() (*Mysql, error) {
@@ -36,7 +36,7 @@ func TestEdit(t *testing.T) {
 	router.POST("/api/model", func(c *gin.Context) {
 		db, err := db()
 		if err != nil {
-			utils.Error(c, err.Error())
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		db.Db.AutoMigrate(&News{})
@@ -46,27 +46,27 @@ func TestEdit(t *testing.T) {
 			param EditParam
 		)
 		// 绑定参数
-		if err := utils.Get(c, &param); err != nil {
-			utils.Error(c, err.Error())
+		if err := gin_lin.Get(c, &param); err != nil {
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		// 绑定模型数据
 		if err = db.Model(param.ID, param, &m); err != nil {
-			utils.Error(c, err.Error())
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		// 添加或编辑数据
 		if err = db.Edit(m.ID, "id", &m, []Same{
 			{Sql: fmt.Sprintf("title = '%s'", m.Title), Message: "标题已存在"},
 		}); err != nil {
-			utils.Error(c, err.Error())
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		if param.ID == 0 {
-			utils.Success(c, "添加成功", m)
+			gin_lin.Success(c, "添加成功", m)
 			return
 		} else {
-			utils.Success(c, "编辑成功", m)
+			gin_lin.Success(c, "编辑成功", m)
 			return
 		}
 	})
@@ -78,7 +78,7 @@ func TestUpdate(t *testing.T) {
 	router.PUT("/api/model", func(c *gin.Context) {
 		db, err := db()
 		if err != nil {
-			utils.Error(c, err.Error())
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		var (
@@ -86,8 +86,8 @@ func TestUpdate(t *testing.T) {
 			param UpdateParam
 		)
 		// 绑定参数
-		if err := utils.Get(c, &param); err != nil {
-			utils.Error(c, err.Error())
+		if err := gin_lin.Get(c, &param); err != nil {
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		// 更新数据
@@ -96,10 +96,10 @@ func TestUpdate(t *testing.T) {
 			Field: param.Field,
 			Value: param.Value,
 		}, &m, []string{"title"}); err != nil {
-			utils.Error(c, err.Error())
+			gin_lin.Error(c, err.Error())
 			return
 		}
-		utils.Success(c, "更新成功", m)
+		gin_lin.Success(c, "更新成功", m)
 	})
 	router.Run()
 }
@@ -109,7 +109,7 @@ func TestDelete(t *testing.T) {
 	router.DELETE("/api/model", func(c *gin.Context) {
 		db, err := db()
 		if err != nil {
-			utils.Error(c, err.Error())
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		var (
@@ -117,8 +117,8 @@ func TestDelete(t *testing.T) {
 			param DeleteParam
 		)
 		// 绑定参数
-		if err := utils.Get(c, &param); err != nil {
-			utils.Error(c, err.Error())
+		if err := gin_lin.Get(c, &param); err != nil {
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		// 更新数据
@@ -126,10 +126,10 @@ func TestDelete(t *testing.T) {
 			ID: param.ID,
 		}, &m)
 		if err != nil {
-			utils.Error(c, err.Error())
+			gin_lin.Error(c, err.Error())
 			return
 		}
-		utils.Success(c, "删除成功", ids)
+		gin_lin.Success(c, "删除成功", ids)
 	})
 	router.Run()
 }
@@ -139,7 +139,7 @@ func TestFirst(t *testing.T) {
 	router.GET("/api/model/:id", func(c *gin.Context) {
 		db, err := db()
 		if err != nil {
-			utils.Error(c, err.Error())
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		var (
@@ -147,18 +147,18 @@ func TestFirst(t *testing.T) {
 			param FirstParam
 		)
 		// 绑定参数
-		if err := utils.Get(c, &param); err != nil {
-			utils.Error(c, err.Error())
+		if err := gin_lin.Get(c, &param); err != nil {
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		// 查询数据
 		if err = db.First(First{
 			ID: param.ID,
 		}, &m); err != nil {
-			utils.Error(c, err.Error())
+			gin_lin.Error(c, err.Error())
 			return
 		}
-		utils.Success(c, "查询完成", m)
+		gin_lin.Success(c, "查询完成", m)
 	})
 	router.Run()
 }
@@ -188,7 +188,7 @@ func TestList(t *testing.T) {
 	router.GET("/api/model", func(c *gin.Context) {
 		db, err := db()
 		if err != nil {
-			utils.Error(c, err.Error())
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		var (
@@ -196,8 +196,8 @@ func TestList(t *testing.T) {
 			param ListParam
 		)
 		// 绑定参数
-		if err := utils.Get(c, &param); err != nil {
-			utils.Error(c, err.Error())
+		if err := gin_lin.Get(c, &param); err != nil {
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		// 查询数据
@@ -206,7 +206,7 @@ func TestList(t *testing.T) {
 			{Name: "title", Op: "like", Value: param.Title},
 		})
 		if err != nil {
-			utils.Error(c, err.Error())
+			gin_lin.Error(c, err.Error())
 			return
 		}
 		data, err := db.List(List{
@@ -217,11 +217,11 @@ func TestList(t *testing.T) {
 			PIDName:  "pid",
 		}, m)
 		if err != nil {
-			utils.Error(c, err.Error())
+			gin_lin.Error(c, err.Error())
 			return
 		}
 
-		utils.Success(c, "查询完成", data)
+		gin_lin.Success(c, "查询完成", data)
 	})
 	router.Run()
 }
@@ -237,7 +237,7 @@ func TestFindChildren(t *testing.T) {
 	router.GET("/api/model/children", func(c *gin.Context) {
 		db, err := db()
 		if err != nil {
-			utils.Error(c, "连接数据库错误"+err.Error())
+			gin_lin.Error(c, "连接数据库错误"+err.Error())
 			return
 		}
 		var (
@@ -245,8 +245,8 @@ func TestFindChildren(t *testing.T) {
 			param FindChildrenParam
 		)
 		// 绑定参数
-		if err := utils.Get(c, &param); err != nil {
-			utils.Error(c, "绑定参数错误"+err.Error())
+		if err := gin_lin.Get(c, &param); err != nil {
+			gin_lin.Error(c, "绑定参数错误"+err.Error())
 			return
 		}
 		// 查询数据
@@ -254,7 +254,7 @@ func TestFindChildren(t *testing.T) {
 			{Name: "title", Op: "like", Value: param.Title},
 		})
 		if err != nil {
-			utils.Error(c, "生成where查询语句错误"+err.Error())
+			gin_lin.Error(c, "生成where查询语句错误"+err.Error())
 			return
 		}
 		err = db.FindChildren(FindChildren{
@@ -264,11 +264,11 @@ func TestFindChildren(t *testing.T) {
 			Order:   param.Order,
 		}, &m)
 		if err != nil {
-			utils.Error(c, "获取子级数据错误："+err.Error())
+			gin_lin.Error(c, "获取子级数据错误："+err.Error())
 			return
 		}
 
-		utils.Success(c, "查询完成", m)
+		gin_lin.Success(c, "查询完成", m)
 	})
 	router.Run()
 }

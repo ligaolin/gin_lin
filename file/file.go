@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ligaolin/gin_lin/utils"
+	"github.com/ligaolin/gin_lin"
 )
 
 type Files struct {
@@ -91,7 +91,7 @@ func (f *Files) GetPath(dir string, extension string, types string) (string, err
 		// 使用提供的路径，去掉文件夹中包含..的目录
 		dir = strings.ReplaceAll(strings.TrimPrefix(dir, "/"), "/..", "")
 		// 路径必须在静态目录下
-		if !utils.StringPreIs(dir, f.Config.Static) {
+		if !gin_lin.StringPreIs(dir, f.Config.Static) {
 			return "", errors.New("您上传的路径不符合规范")
 		}
 	}
@@ -125,7 +125,7 @@ func limit(extension string, types string, size int64, l Limit) error {
 			return fmt.Errorf("文件不能超过%dM", l.OtherMaxSize)
 		}
 	}
-	s, err := utils.StringToSliceString(l.Extension, ",")
+	s, err := gin_lin.StringToSliceString(l.Extension, ",")
 	if err != nil {
 		return err
 	}

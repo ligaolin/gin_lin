@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/ligaolin/gin_lin/utils"
+	"github.com/ligaolin/gin_lin"
 )
 
 type Where struct {
@@ -28,7 +28,7 @@ func ToWhere(data []Where) (string, error) {
 
 			switch v.Op {
 			case "in":
-				sql = append(sql, fmt.Sprintf("%s in ('%s')", v.Name, utils.StringToString(value, ",", "','")))
+				sql = append(sql, fmt.Sprintf("%s in ('%s')", v.Name, gin_lin.StringToString(value, ",", "','")))
 			case "like":
 				sql = append(sql, fmt.Sprintf("%s like '%%%s%%'", v.Name, value))
 			case "notLike":

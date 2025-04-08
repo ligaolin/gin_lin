@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/ligaolin/gin_lin/utils"
+	"github.com/ligaolin/gin_lin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -40,7 +40,7 @@ func (d *Mysql) Model(id uint, param any, m any) error {
 			}
 		}
 	}
-	utils.AssignFields(param, m)
+	gin_lin.AssignFields(param, m)
 	return nil
 }
 
@@ -95,7 +95,7 @@ func (d *Mysql) Update(param Update, m any, has []string) (err error) {
 	if param.Field == "" {
 		return errors.New("field必须")
 	}
-	if !utils.Contains(has, param.Field) {
+	if !gin_lin.Contains(has, param.Field) {
 		return errors.New("field数据不合法")
 	}
 	if err := d.Db.First(m, param.IDName+" = ?", param.ID).Error; err != nil {
@@ -119,7 +119,7 @@ func (d *Mysql) Delete(param Delete, m any) ([]uint, error) {
 	if param.IDName == "" {
 		param.IDName = "id"
 	}
-	ids, err := utils.ToSliceUint(param.ID, ",")
+	ids, err := gin_lin.ToSliceUint(param.ID, ",")
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +299,7 @@ func (d *Mysql) List(l List, m any) (ListData, error) {
 
 func (d *Mysql) Code(n int, field string, m any) (string, error) {
 	for {
-		code := utils.GenerateRandomAlphanumeric(n)
+		code := gin_lin.GenerateRandomAlphanumeric(n)
 		if err := d.Db.Where(field+" = ?", code).First(m).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				// 如果记录不存在，说明生成的 code 是唯一的，可以返回
