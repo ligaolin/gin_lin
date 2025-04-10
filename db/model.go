@@ -231,7 +231,7 @@ func (d *Mysql) List(l ListStruct, m any) (ListData, error) {
 	if l.Select != "" {
 		db.Select(l.Select)
 	}
-	if err := db.Find(&data.Data).Error; err != nil {
+	if err := db.Find(data.Data).Error; err != nil {
 		return data, err
 	}
 	if err := total_db.Count(&data.Total).Error; err != nil {
@@ -246,7 +246,7 @@ func (d *Mysql) List(l ListStruct, m any) (ListData, error) {
 
 	if l.PIDName != "" {
 		// 使用反射动态处理 HasChildren 字段
-		sliceValue := reflect.ValueOf(data.Data)
+		sliceValue := reflect.ValueOf(data.Data).Elem()
 		if sliceValue.Kind() == reflect.Slice {
 			for i := range sliceValue.Len() {
 				item := sliceValue.Index(i)

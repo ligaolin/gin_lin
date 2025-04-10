@@ -218,7 +218,7 @@ func TestList(t *testing.T) {
 			Where:    where,
 			Order:    param.Order,
 			PIDName:  "pid",
-		}, m)
+		}, &m)
 		if err != nil {
 			gin_lin.Error(c, err.Error())
 			return
