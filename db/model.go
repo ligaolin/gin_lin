@@ -47,7 +47,6 @@ func (d *Mysql) Model(id uint, param any, m any) error {
 type EditStruct struct {
 	ID     uint
 	IDName string
-	Model  any
 	Same   []SameStruct
 }
 
@@ -57,7 +56,7 @@ type SameStruct struct {
 }
 
 // 添加或编辑
-func (d *Mysql) Edit(param EditStruct) error {
+func (d *Mysql) Edit(param EditStruct, m any) error {
 	var count int64
 	if param.IDName == "" {
 		param.IDName = "id"
@@ -66,14 +65,14 @@ func (d *Mysql) Edit(param EditStruct) error {
 		if param.ID != 0 {
 			v.Sql += fmt.Sprintf(" AND %s != %d", param.IDName, param.ID)
 		}
-		if err := d.Db.Model(&param.Model).Where(v.Sql).Count(&count).Error; err != nil {
+		if err := d.Db.Model(m).Where(v.Sql).Count(&count).Error; err != nil {
 			return err
 		}
 		if count > 0 {
 			return errors.New(v.Message)
 		}
 	}
-	return d.Db.Save(param.Model).Error
+	return d.Db.Save(m).Error
 }
 
 type UpdateStruct struct {

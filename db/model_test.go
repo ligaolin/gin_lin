@@ -57,12 +57,11 @@ func TestEdit(t *testing.T) {
 		}
 		// 添加或编辑数据
 		if err = db.Edit(EditStruct{
-			ID:    m.ID,
-			Model: &m,
+			ID: m.ID,
 			Same: []SameStruct{
 				{Sql: fmt.Sprintf("title = '%s'", m.Title), Message: "标题已存在"},
 			},
-		}); err != nil {
+		}, &m); err != nil {
 			gin_lin.Error(c, err.Error())
 			return
 		}
