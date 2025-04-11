@@ -2,7 +2,6 @@ package gin_lin
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -14,7 +13,7 @@ type JwtConfig struct {
 }
 
 type Claims struct {
-	ID   string `json:"id"`
+	ID   uint   `json:"id"`
 	Type string `json:"type"`
 	jwt.RegisteredClaims
 }
@@ -29,9 +28,9 @@ func NewJwt(cfg JwtConfig) *Jwt {
 	}
 }
 
-func (j *Jwt) Set(id *uint32, types string) (string, error) {
+func (j *Jwt) Set(id uint, types string) (string, error) {
 	claims := Claims{
-		fmt.Sprintf("%d", *id),
+		id,
 		types,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(j.Config.Expir) * time.Minute)),
