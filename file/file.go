@@ -24,7 +24,7 @@ type Files struct {
 	Config  FileConfig
 }
 
-func NewUpload(c *gin.Context, cfg FileConfig) *Files {
+func NewFile(c *gin.Context, cfg FileConfig) *Files {
 	return &Files{
 		Context: c,
 		Config:  cfg,
