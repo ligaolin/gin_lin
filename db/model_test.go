@@ -10,7 +10,7 @@ import (
 )
 
 func db() (*Mysql, error) {
-	return NewMysql(MysqlConfig{
+	return NewMysql(&MysqlConfig{
 		User:      "root",
 		Password:  "12345678f",
 		Host:      "134.175.182.204",

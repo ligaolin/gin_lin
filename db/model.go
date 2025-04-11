@@ -15,7 +15,7 @@ type Mysql struct {
 }
 
 // 创建mysql连接
-func NewMysql(cfg MysqlConfig) (*Mysql, error) {
+func NewMysql(cfg *MysqlConfig) (*Mysql, error) {
 	db, err := gorm.Open(mysql.Open(
 		fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%s&loc=%s",
 			cfg.User,
