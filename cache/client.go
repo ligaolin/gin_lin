@@ -10,7 +10,7 @@ type Client struct {
 	Cache Cache
 }
 
-func NewClient(cfg CacheConfig) *Client {
+func NewClient(cfg *CacheConfig) *Client {
 	return &Client{
 		Cache: *NewCache(cfg),
 	}

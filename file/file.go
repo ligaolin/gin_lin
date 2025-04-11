@@ -21,10 +21,10 @@ import (
 
 type Files struct {
 	Context *gin.Context
-	Config  FileConfig
+	Config  *FileConfig
 }
 
-func NewFile(c *gin.Context, cfg FileConfig) *Files {
+func NewFile(c *gin.Context, cfg *FileConfig) *Files {
 	return &Files{
 		Context: c,
 		Config:  cfg,

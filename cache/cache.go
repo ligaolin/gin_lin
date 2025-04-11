@@ -31,11 +31,11 @@ type fileCacheValue struct {
 type Cache struct {
 	RedisCache *RedisCache
 	FileCache  *FileCache
-	Config     CacheConfig
+	Config     *CacheConfig
 }
 
 // 创建缓存
-func NewCache(cfg CacheConfig) *Cache {
+func NewCache(cfg *CacheConfig) *Cache {
 	c := &Cache{
 		RedisCache: NewRedis(cfg.Redis.Addr, cfg.Redis.Port, cfg.Redis.Password),
 		FileCache:  NewFileCache(cfg.File.Path),

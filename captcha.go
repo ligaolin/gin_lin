@@ -20,10 +20,10 @@ type CaptchaConfig struct {
 
 type Captcha struct {
 	Client *cache.Client
-	Config CaptchaConfig
+	Config *CaptchaConfig
 }
 
-func NewCaptcha(cfg CaptchaConfig, cacheCfg cache.CacheConfig) *Captcha {
+func NewCaptcha(cfg *CaptchaConfig, cacheCfg *cache.CacheConfig) *Captcha {
 	return &Captcha{
 		Client: cache.NewClient(cacheCfg),
 		Config: cfg,
@@ -67,7 +67,7 @@ func (c *Captcha) VerifyImageCode(uuid string, answer string, clear bool) error 
 	}
 }
 
-func (c *Captcha) EmailSend(email string, cfg EmailConfig, subject string) (string, error) {
+func (c *Captcha) EmailSend(email string, cfg *EmailConfig, subject string) (string, error) {
 	code := Random(6)
 	uuid, err := c.Client.Set("captcha-email", code, time.Minute*time.Duration(c.Config.Expir))
 	if err != nil {
@@ -93,7 +93,7 @@ func (c *Captcha) EmailCodeVerify(uuid string, code int32, clear bool) error {
 	}
 }
 
-func (e *Captcha) SendCode(cfg EmailConfig, to string, code int32, subject string) error {
+func (e *Captcha) SendCode(cfg *EmailConfig, to string, code int32, subject string) error {
 	return NewEmail(cfg).Send([]string{to}, subject, fmt.Sprintf(`尊敬的用户：
 
 	您好！

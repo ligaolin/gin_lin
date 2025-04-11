@@ -15,11 +15,11 @@ import (
 type Backup struct {
 	Db     *sql.DB
 	path   string
-	config MysqlConfig
+	config *MysqlConfig
 }
 
 // 创建一个数据库备份对象
-func NewDbBackup(cfg MysqlConfig, path string) (*Backup, error) {
+func NewDbBackup(cfg *MysqlConfig, path string) (*Backup, error) {
 	// 构建数据库连接字符串
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%s&loc=%s",
 		cfg.User,

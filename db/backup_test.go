@@ -6,7 +6,7 @@ import (
 )
 
 func TestBackup(t *testing.T) {
-	db, err := NewDbBackup(MysqlConfig{}, "backup.sql")
+	db, err := NewDbBackup(&MysqlConfig{}, "backup.sql")
 	if err != nil {
 		t.Error(fmt.Errorf("连接数据库失败: %w", err))
 	}

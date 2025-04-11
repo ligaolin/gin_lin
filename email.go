@@ -13,10 +13,10 @@ type EmailConfig struct {
 
 type Email struct {
 	Dialer *gomail.Dialer // SMTP服务器
-	Config EmailConfig
+	Config *EmailConfig
 }
 
-func NewEmail(cfg EmailConfig) *Email {
+func NewEmail(cfg *EmailConfig) *Email {
 	return &Email{
 		Dialer: gomail.NewDialer(cfg.Smtp, cfg.Port, cfg.Email, cfg.Password),
 		Config: cfg,

@@ -19,10 +19,10 @@ type Claims struct {
 }
 
 type Jwt struct {
-	Config JwtConfig
+	Config *JwtConfig
 }
 
-func NewJwt(cfg JwtConfig) *Jwt {
+func NewJwt(cfg *JwtConfig) *Jwt {
 	return &Jwt{
 		Config: cfg,
 	}
