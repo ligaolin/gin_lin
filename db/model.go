@@ -122,7 +122,7 @@ func (d *Mysql) Delete(param DeleteStruct, m any) ([]uint, error) {
 		return nil, err
 	}
 	if param.PIDName != "" {
-		if err = d.FindChildrenId(FindChildrenIdStruct{IDs: &ids, PIDName: param.PIDName, IDName: param.IDName}, m); err != nil {
+		if err = d.FindChildrenID(FindChildrenIDStruct{IDs: &ids, PIDName: param.PIDName, IDName: param.IDName}, m); err != nil {
 			return nil, err
 		}
 	}
@@ -133,19 +133,19 @@ func (d *Mysql) Delete(param DeleteStruct, m any) ([]uint, error) {
 	return ids, nil
 }
 
-type FindChildrenIdStruct struct {
+type FindChildrenIDStruct struct {
 	IDs     *[]uint
 	PIDName string
 	IDName  string
 }
 
-func (d *Mysql) FindChildrenId(f FindChildrenIdStruct, m any) error {
+func (d *Mysql) FindChildrenID(f FindChildrenIDStruct, m any) error {
 	var cids []uint
 	if err := d.Db.Model(&m).Where(f.PIDName+" IN ?", *f.IDs).Pluck(f.IDName, &cids).Error; err != nil {
 		return err
 	}
 	if len(cids) > 0 {
-		err := d.FindChildrenId(FindChildrenIdStruct{IDs: &cids, PIDName: f.PIDName, IDName: f.IDName}, m)
+		err := d.FindChildrenID(FindChildrenIDStruct{IDs: &cids, PIDName: f.PIDName, IDName: f.IDName}, m)
 		if err != nil {
 			return err
 		}

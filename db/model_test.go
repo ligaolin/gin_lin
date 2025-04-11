@@ -181,7 +181,7 @@ func TestModel(t *testing.T) {
 }
 
 type ListParam struct {
-	Id    string `form:"id"`
+	ID    string `form:"id"`
 	Title string `form:"title"`
 	ListParamBase
 }
@@ -205,7 +205,7 @@ func TestList(t *testing.T) {
 		}
 		// 查询数据
 		where, err := ToWhere([]Where{
-			{Name: "id", Op: "like", Value: param.Id},
+			{Name: "id", Op: "like", Value: param.ID},
 			{Name: "title", Op: "like", Value: param.Title},
 		})
 		if err != nil {

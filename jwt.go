@@ -14,7 +14,7 @@ type JwtConfig struct {
 }
 
 type Claims struct {
-	Id   string `json:"id"`
+	ID   string `json:"id"`
 	Type string `json:"type"`
 	jwt.RegisteredClaims
 }
