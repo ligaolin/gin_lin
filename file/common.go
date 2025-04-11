@@ -13,7 +13,6 @@ type File struct {
 }
 
 type FileConfig struct {
-	Path   string `json:"path" toml:"path" yaml:"path"`
 	Domain string `json:"domain" toml:"domain" yaml:"domain"` // 域名
 	Static string `json:"static" toml:"static" yaml:"static"` // 静态文件目录
 }
