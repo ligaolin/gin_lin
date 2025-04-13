@@ -19,16 +19,9 @@ require (
 )
 
 require (
-	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/Masterminds/semver v1.5.0 // indirect
-	github.com/klauspost/compress v1.17.8 // indirect
-	github.com/pingcap/errors v0.11.5-0.20240311024730-e056997136bb // indirect
-	github.com/pingcap/log v1.1.1-0.20230317032135-a0d097d16e22 // indirect
-	github.com/pingcap/tidb/pkg/parser v0.0.0-20241118164214-4f047be191be // indirect
-	go.uber.org/atomic v1.11.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )
 
 require (
@@ -40,7 +33,6 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/go-mysql-org/go-mysql v1.12.0
 	github.com/go-pay/crypto v0.0.1 // indirect
 	github.com/go-pay/errgroup v0.0.3 // indirect
 	github.com/go-pay/smap v0.0.2 // indirect
@@ -48,7 +40,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.20.0 // indirect
-	github.com/go-sql-driver/mysql v1.7.1 // indirect
+	github.com/go-sql-driver/mysql v1.7.1
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/btree v1.1.3 // indirect

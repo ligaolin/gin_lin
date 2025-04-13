@@ -81,6 +81,6 @@ type ChildrenStruct[T any] struct {
 }
 
 type PIDLevel struct {
-	PID   uint `json:"pid" gorm:"type:int(11);default:0;comment:父级id"`
+	PID   uint `json:"pid" gorm:"column:pid;type:int(11);default:0;comment:父级id"`
 	Level uint `json:"level" gorm:"type:int(2);default:1;comment:层级"`
 }
