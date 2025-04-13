@@ -10,16 +10,7 @@ import (
 )
 
 func db() (*Mysql, error) {
-	return NewMysql(&MysqlConfig{
-		User:      "root",
-		Password:  "12345678f",
-		Host:      "134.175.182.204",
-		Port:      3306,
-		DBName:    "wp",
-		Charset:   "utf8mb4",
-		ParseTime: "True",
-		Loc:       "Local",
-	})
+	return NewMysql(&MysqlConfig{})
 }
 
 type EditParam struct {
