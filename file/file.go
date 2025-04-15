@@ -51,10 +51,11 @@ func (f *Files) Upload(file *multipart.FileHeader, dir string, l Limit) (*File, 
 	}
 
 	// 获取文件保存路径
-	path, err := f.GetPath(dir, extension, types)
+	path, err := f.GetPath(dir, types)
 	if err != nil {
 		return nil, err
 	}
+	path += "/" + fmt.Sprintf("%d", time.Now().UnixNano()) + "." + extension
 
 	// 保存文件
 	size, err := Save(f.Context, file, path, l.Compress)
@@ -82,10 +83,13 @@ func (f *Files) Upload(file *multipart.FileHeader, dir string, l Limit) (*File, 
 }
 
 // 获取文件保存路径
-func (f *Files) GetPath(dir string, extension string, types string) (string, error) {
+func (f *Files) GetPath(dir string, types string) (string, error) {
 	if dir == "" {
 		// 默认路径
-		dir = f.Config.Static + "/upload/" + types + "/" + time.Now().Format("2006-01-02")
+		dir = f.Config.Static + "/upload"
+		if types != "" {
+			dir += "/" + types + "/" + time.Now().Format("2006-01-02")
+		}
 	} else {
 		// 使用提供的路径，去掉文件夹中包含..的目录
 		dir = strings.ReplaceAll(strings.TrimPrefix(dir, "/"), "/..", "")
@@ -98,7 +102,7 @@ func (f *Files) GetPath(dir string, extension string, types string) (string, err
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return "", err
 	}
-	return dir + "/" + fmt.Sprintf("%d", time.Now().UnixNano()) + "." + extension, nil
+	return dir, nil
 }
 
 type Limit struct {
@@ -152,6 +156,12 @@ type ListRes struct {
 }
 
 func (f *Files) List(param ListParam) (*ListRes, error) {
+	// 获取文件保存路径
+	var err error
+	param.Path, err = f.GetPath(param.Path, "")
+	if err != nil {
+		return nil, err
+	}
 	files, err := os.ReadDir(param.Path)
 	if err != nil {
 		return nil, err
@@ -217,17 +227,19 @@ func (f *Files) List(param ListParam) (*ListRes, error) {
 }
 
 func (f *Files) Delete(path string) error {
-	name := f.Context.QueryArray("name[]")
-	for _, v := range name {
-		s := strings.ReplaceAll(path+"/"+v, "/..", "")
-		if s == "" {
-			return fmt.Errorf("路径必须")
-		}
-		// 删除文件夹及其内容
-		err := os.RemoveAll(s)
-		if err != nil {
-			return err
-		}
+	// 使用提供的路径，去掉文件夹中包含..的目录
+	path = strings.ReplaceAll(strings.TrimPrefix(path, "/"), "/..", "")
+	// 路径必须在静态目录下
+	if !gin_lin.StringPreIs(path, f.Config.Static) {
+		return errors.New("您要删除的路径不符合规范")
+	}
+	if path == "" {
+		return fmt.Errorf("路径必须")
+	}
+	// 删除文件夹及其内容
+	err := os.RemoveAll(path)
+	if err != nil {
+		return err
 	}
 	return nil
 }
