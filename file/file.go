@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -31,14 +32,14 @@ func NewFile(c *gin.Context, cfg *FileConfig) *Files {
 }
 
 func (f *Files) Upload(file *multipart.FileHeader, dir string, l Limit) (*File, error) {
-	name := strings.Split(file.Filename, ".")
+	extension := filepath.Ext(file.Filename)
+	baseName := file.Filename
+	if len(extension) > 0 {
+		extension = extension[1:]
+		baseName = file.Filename[:len(file.Filename)-len(extension)-1]
+	}
 	mime := file.Header.Get("Content-Type")
 	types := strings.Split(mime, "/")[0]
-
-	extension := ""
-	if len(name) >= 1 {
-		extension = name[1]
-	}
 
 	if types != "image" && types != "video" {
 		types = "other"
@@ -70,8 +71,9 @@ func (f *Files) Upload(file *multipart.FileHeader, dir string, l Limit) (*File, 
 	}
 
 	return &File{
-		Name:      name[0],
+		Name:      baseName,
 		Extension: extension,
+		FullName:  file.Filename,
 		Path:      "/" + path,
 		Url:       base + "/" + path,
 		Size:      size,
@@ -198,11 +200,12 @@ func (f *Files) List(param ListParam) (*ListRes, error) {
 			return nil, err
 		}
 
-		var extension string
 		name := v.Name()
-		name_arr := strings.Split(name, ".")
-		if len(name_arr) > 1 {
-			extension = name_arr[len(name_arr)-1]
+		extension := filepath.Ext(name)
+		baseName := name
+		if len(extension) > 0 {
+			extension = extension[1:]
+			baseName = name[:len(name)-len(extension)-1]
 		}
 
 		mime, _ := FileMimeType(param.Path + "/" + name)
@@ -212,8 +215,9 @@ func (f *Files) List(param ListParam) (*ListRes, error) {
 		}
 
 		list = append(list, File{
-			Name:      name_arr[0],
+			Name:      baseName,
 			Extension: extension,
+			FullName:  name,
 			Path:      "/" + param.Path,
 			Url:       base + "/" + param.Path + "/" + name,
 			Size:      info.Size() / 1024,
@@ -226,16 +230,22 @@ func (f *Files) List(param ListParam) (*ListRes, error) {
 	return &ListRes{Data: list, Total: int64(len(files))}, nil
 }
 
-func (f *Files) Delete(path string) error {
-	// 使用提供的路径，去掉文件夹中包含..的目录
-	path = strings.ReplaceAll(strings.TrimPrefix(path, "/"), "/..", "")
-	// 路径必须在静态目录下
-	if !gin_lin.StringPreIs(path, f.Config.Static) {
-		return errors.New("您要删除的路径不符合规范")
-	}
+func (f *Files) Delete(path string, name string) error {
 	if path == "" {
-		return fmt.Errorf("路径必须")
+		// 默认路径
+		path = f.Config.Static + "/upload"
+	} else {
+		// 使用提供的路径，去掉文件夹中包含..的目录
+		path = strings.ReplaceAll(strings.TrimPrefix(path, "/"), "/..", "")
+		// 路径必须在静态目录下
+		if !gin_lin.StringPreIs(path, f.Config.Static) {
+			return errors.New("您要删除的路径不符合规范")
+		}
 	}
+	if name != "" {
+		path += "/" + name
+	}
+
 	// 删除文件夹及其内容
 	err := os.RemoveAll(path)
 	if err != nil {

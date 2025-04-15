@@ -3,6 +3,7 @@ package file
 type File struct {
 	Name      string `json:"name"`      // 文件名，不包含扩展名
 	Extension string `json:"extension"` // 扩展名
+	FullName  string `json:"full_name"` // 文件名，包含扩展名
 	Path      string `json:"path"`      // 文件保存路径
 	Url       string `json:"url"`       // 文件访问路径
 	Size      int64  `json:"size"`      // 文件大小
