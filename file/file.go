@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -96,7 +95,7 @@ func (f *Files) GetPath(dir string, extension string, types string) (string, err
 		}
 	}
 	// 创建文件目录
-	if err := os.MkdirAll(filepath.Dir(dir), os.ModePerm); err != nil {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return "", err
 	}
 	return dir + "/" + fmt.Sprintf("%d", time.Now().UnixNano()) + "." + extension, nil

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/jinzhu/copier"
 	"github.com/ligaolin/gin_lin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -40,7 +41,7 @@ func (d *Mysql) Model(id uint, param any, m any) error {
 			}
 		}
 	}
-	gin_lin.AssignFields(param, m)
+	copier.Copy(m, param)
 	return nil
 }
 
@@ -264,7 +265,6 @@ func (d *Mysql) List(l ListStruct, m any) (ListData, error) {
 				if hasChildrenField.IsValid() && hasChildrenField.CanSet() {
 					var (
 						total   int64
-						w       string
 						idField reflect.Value
 					)
 					if l.IDName != "" {
@@ -274,12 +274,7 @@ func (d *Mysql) List(l ListStruct, m any) (ListData, error) {
 					}
 					if idField.IsValid() {
 						id := idField.Interface()
-						if l.Where == "" {
-							w = fmt.Sprintf(l.PIDName+" = %v", id)
-						} else {
-							w = l.Where + fmt.Sprintf(" AND %s = %v", l.PIDName, id)
-						}
-						if err := d.Db.Model(m).Where(w).Count(&total).Error; err != nil {
+						if err := d.Db.Model(m).Where(l.PIDName+" = ?", id).Count(&total).Error; err != nil {
 							return data, err
 						}
 						if total > 0 {
