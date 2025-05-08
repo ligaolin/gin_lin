@@ -1,4 +1,4 @@
-package pay
+package ali
 
 import (
 	"context"
@@ -21,10 +21,10 @@ type PayAliConfig struct {
 
 type AliPay struct {
 	Client *alipay.ClientV3
-	Config PayAliConfig
+	Config *PayAliConfig
 }
 
-func NewAliPay(cfg PayAliConfig) (*AliPay, error) {
+func NewAliPay(cfg *PayAliConfig) (*AliPay, error) {
 	privateKey, err := os.ReadFile(cfg.PrivateKey)
 	if err != nil {
 		xlog.Error(err)
