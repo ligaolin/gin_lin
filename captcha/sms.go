@@ -38,13 +38,13 @@ func (c *Captcha) SmsCodeVerify(uuid string, code int32, clear bool) error {
 	}
 }
 
-func (as Captcha) SendSmsCode(cfg *ali.AliSmsConfig, phone string, code int32) error {
+func (as Captcha) SendSmsCode(cfg *ali.AliSmsConfig, mobile string, code int32) error {
 	alisms, err := ali.NewAliSms(cfg)
 	if err != nil {
 		return err
 	}
 	if _, err := alisms.Client.SendSmsWithOptions(&dysmsapi20170525.SendSmsRequest{
-		PhoneNumbers:  tea.String(phone),
+		PhoneNumbers:  tea.String(mobile),
 		SignName:      tea.String(cfg.SignName),
 		TemplateCode:  tea.String(cfg.TemplateCodeVerificationCode),
 		TemplateParam: tea.String(fmt.Sprintf(`{"code":"%d"}`, code)),

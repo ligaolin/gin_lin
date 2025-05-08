@@ -51,7 +51,7 @@ type SortStruct struct {
 
 // 模型状态
 type StateStruct struct {
-	State string `json:"state" gorm:"type:varchar(5);default:开启;comment:状态"`
+	State string `json:"state" gorm:"type:enum('开启','关闭');default:开启;comment:状态"`
 }
 
 // 模型排序和状态
