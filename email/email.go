@@ -1,4 +1,4 @@
-package gin_lin
+package email
 
 import (
 	"gopkg.in/gomail.v2"
