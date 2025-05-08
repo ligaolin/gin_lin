@@ -10,7 +10,7 @@ import (
 	"github.com/ligaolin/gin_lin"
 )
 
-type PayWechatConfig struct {
+type WechatPayConfig struct {
 	AppID      string `json:"app_id" toml:"app_id" yaml:"app_id"`
 	MchID      string `json:"mch_id" toml:"mch_id" yaml:"mch_id"`
 	SerialNo   string `json:"serial_no" toml:"serial_no" yaml:"serial_no"`
@@ -21,10 +21,10 @@ type PayWechatConfig struct {
 
 type WechatMerchant struct {
 	Client *wechat.ClientV3
-	Config PayWechatConfig
+	Config *WechatPayConfig
 }
 
-func NewWechatMerchant(cfg PayWechatConfig) (*WechatMerchant, error) {
+func NewWechatMerchant(cfg *WechatPayConfig) (*WechatMerchant, error) {
 	// NewClientV3 初始化微信客户端 v3
 	// mchid：商户ID 或者服务商模式的 sp_mchid
 	// serialNo：商户证书的证书序列号

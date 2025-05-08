@@ -11,7 +11,7 @@ import (
 	"github.com/go-pay/xlog"
 )
 
-type PayAliConfig struct {
+type AliPayConfig struct {
 	AppID               string `json:"app_id" toml:"app_id" yaml:"app_id"`
 	PrivateKey          string `json:"private_key" toml:"private_key" yaml:"private_key"`                                  // 文件路径
 	AppPublicCert       string `json:"app_public_cert" toml:"app_public_cert" yaml:"app_public_cert"`                      // 文件路径
@@ -21,10 +21,10 @@ type PayAliConfig struct {
 
 type AliPay struct {
 	Client *alipay.ClientV3
-	Config *PayAliConfig
+	Config *AliPayConfig
 }
 
-func NewAliPay(cfg *PayAliConfig) (*AliPay, error) {
+func NewAliPay(cfg *AliPayConfig) (*AliPay, error) {
 	privateKey, err := os.ReadFile(cfg.PrivateKey)
 	if err != nil {
 		xlog.Error(err)
