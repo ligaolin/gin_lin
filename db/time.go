@@ -13,7 +13,17 @@ func (t *Time) MarshalJSON() ([]byte, error) {
 	return fmt.Appendf(nil, "\"%v\"", tTime.Format("2006-01-02 15:04:05")), nil
 }
 
+func (t *Time) ToDateString() string {
+	if t == nil {
+		return ""
+	}
+	return time.Time(*t).Format("2006-01-02")
+}
+
 func (t *Time) ToString() string {
+	if t == nil {
+		return ""
+	}
 	return time.Time(*t).Format("2006-01-02 15:04:05")
 }
 
