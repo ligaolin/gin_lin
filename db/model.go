@@ -225,15 +225,20 @@ func (d *Mysql) List(l ListStruct, m any) (ListData, error) {
 	if l.Order != "" {
 		db.Order(l.Order)
 	}
-	if l.Joins != "" {
-		db.Joins(l.Joins)
-		total_db.Joins(l.Joins)
-	}
 	if l.Select != "" {
 		db.Select(l.Select)
 	}
-	if err := db.Find(data.Data).Error; err != nil {
-		return data, err
+	if l.Joins != "" {
+		db.Joins(l.Joins)
+		total_db.Joins(l.Joins)
+
+		if err := db.Scan(data.Data).Error; err != nil {
+			return data, err
+		}
+	} else {
+		if err := db.Find(data.Data).Error; err != nil {
+			return data, err
+		}
 	}
 	if err := total_db.Count(&data.Total).Error; err != nil {
 		return data, err
