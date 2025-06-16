@@ -156,7 +156,7 @@ func (d *Mysql) FindChildrenID(f FindChildrenIDStruct, m any) error {
 }
 
 type FirstStruct struct {
-	ID     uint
+	ID     any
 	Joins  string
 	Select string
 	IDName string
