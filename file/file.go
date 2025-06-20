@@ -214,12 +214,13 @@ func (f *Files) List(param ListParam) (*ListRes, error) {
 			types = "other"
 		}
 
+		path := "/" + param.Path + "/" + name
 		list = append(list, File{
 			Name:      baseName,
 			Extension: extension,
 			FullName:  name,
-			Path:      "/" + param.Path,
-			Url:       base + "/" + param.Path + "/" + name,
+			Path:      path,
+			Url:       base + path,
 			Size:      info.Size() / 1024,
 			Type:      types,
 			IsDir:     v.IsDir(),
