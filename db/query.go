@@ -29,6 +29,8 @@ func ToWhere(data []Where) (string, error) {
 			switch v.Op {
 			case "in":
 				sql = append(sql, fmt.Sprintf("%s in ('%s')", v.Name, gin_lin.StringToString(value, ",", "','")))
+			case "not in":
+				sql = append(sql, fmt.Sprintf("%s not in ('%s')", v.Name, gin_lin.StringToString(value, ",", "','")))
 			case "like":
 				sql = append(sql, fmt.Sprintf("%s like '%%%s%%'", v.Name, value))
 			case "notLike":
