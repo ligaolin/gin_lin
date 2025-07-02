@@ -27,7 +27,7 @@ var Rules = map[string]string{
 	"chsAlphaNum":           "^[a-zA-Z0-9\u4e00-\u9fa5]+$",                         // 汉字、字母、数字
 	"chsAlphaNumUnline":     "^[\\w\u4e00-\u9fa5]+$",                               // 汉字、字母、数字、下划线
 	"chsAlphaNumUnlineDash": "^[\\w\\-\u4e00-\u9fa5]+$",                            // 汉字、字母、数字、下划线、破折号（-）
-	"mobile":                "^1[3,4,5,7,8]\\d{9}$",                                // 手机号
+	"mobile":                "^1\\d{10}$",                                          // 手机号
 	"email":                 "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$", // 邮箱
 	"postalCode":            "^[1-9]\\d{5}$",                                       // 中国邮政编码
 	"idCard":                "(^\\d{15}$)|(^\\d{18}$)|(^\\d{17}(\\d|X|x)$)",        // 中国身份证
