@@ -13,28 +13,31 @@ import (
 )
 
 func (c *Captcha) SmsSend(cfg *ali.AliSmsConfig, phone string) (string, error) {
-	code := gin_lin.Random(6)
-	uuid, err := c.Client.Set("captcha-sms", code, time.Minute*time.Duration(c.Config.Expir))
+	value := Value{
+		Code:    gin_lin.Random(6),
+		Carrier: phone,
+	}
+	uuid, err := c.Client.Set("captcha-sms", value, time.Minute*time.Duration(c.Config.Expir))
 	if err != nil {
 		return "", err
 	}
 
-	err = c.SendSmsCode(cfg, phone, code)
+	err = c.SendSmsCode(cfg, phone, value.Code)
 	if err != nil {
 		return "", err
 	}
 	return uuid, nil
 }
 
-func (c *Captcha) SmsCodeVerify(uuid string, code int32, clear bool) error {
-	var val int32
+func (c *Captcha) SmsCodeVerify(uuid string, code int32, clear bool) (string, error) {
+	var val Value
 	if err := c.Client.Get(uuid, "captcha-sms", &val, clear); err != nil {
-		return errors.New("验证码不存在或过期")
+		return "", errors.New("验证码不存在或过期")
 	}
-	if val == code {
-		return nil
+	if val.Code == code {
+		return val.Carrier, nil
 	} else {
-		return errors.New("验证码错误")
+		return "", errors.New("验证码错误")
 	}
 }
 
