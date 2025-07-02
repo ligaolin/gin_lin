@@ -9,11 +9,6 @@ import (
 	"github.com/ligaolin/gin_lin/email"
 )
 
-type Value struct {
-	Code    int32
-	Carrier string
-}
-
 func (c *Captcha) EmailSend(email string, cfg *email.EmailConfig, subject string) (string, error) {
 	value := Value{
 		Code:    gin_lin.Random(6),

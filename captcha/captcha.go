@@ -19,3 +19,8 @@ func NewCaptcha(cfg *CaptchaConfig, cacheCfg *cache.CacheConfig) *Captcha {
 		Config: cfg,
 	}
 }
+
+type Value struct {
+	Code    int32
+	Carrier string
+}
