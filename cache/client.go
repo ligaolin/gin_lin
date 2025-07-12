@@ -10,22 +10,24 @@ type Client struct {
 	Cache Cache
 }
 
-func NewClient(cfg *CacheConfig) *Client {
+func NewClient(cache Cache) *Client {
 	return &Client{
-		Cache: *NewCache(cfg),
+		Cache: cache,
 	}
 }
 
-func (c *Client) Set(k string, v any, expir time.Duration) (string, error) {
+func (c *Client) Set(key string, v any, expir time.Duration) (string, error) {
 	uuid := uuid.New().String()
-	c.Cache.Set("client-"+k+uuid, v, expir)
-	return uuid, nil
+	err := c.Cache.Set("client-"+key+uuid, v, expir)
+	return uuid, err
 }
 
-func (c *Client) Get(uuid string, k string, t any, clear bool) error {
-	err := c.Cache.Get("client-"+k+uuid, t)
-	if err != nil && clear {
-		c.Cache.Delete("client-" + k + uuid)
+func (c *Client) Get(uuid string, key string, value any, clear bool) error {
+	if err := c.Cache.Get("client-"+key+uuid, value); err != nil {
+		return err
 	}
-	return err
+	if clear {
+		c.Cache.Delete("client-" + key + uuid)
+	}
+	return nil
 }
