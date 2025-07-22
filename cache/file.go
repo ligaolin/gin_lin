@@ -15,13 +15,6 @@ type File struct {
 	Path   string
 }
 
-func NewFile(path string) *File {
-	return &File{
-		Client: diskcache.New(path),
-		Path:   path,
-	}
-}
-
 type Value struct {
 	Expir   time.Time
 	IsExpir bool // 是否会过期，true会过期，false不会过期

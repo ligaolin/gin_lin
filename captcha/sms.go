@@ -9,48 +9,59 @@ import (
 	"github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/ligaolin/gin_lin"
+	"github.com/ligaolin/gin_lin/cache"
 	"github.com/ligaolin/gin_lin/sdk/ali"
 )
 
-func (c *Captcha) SmsSend(cfg *ali.AliSmsConfig, phone string) (string, error) {
-	value := Value{
-		Code:    gin_lin.Random(6),
-		Carrier: phone,
+type Sms struct {
+	Client *cache.Client
+	AliSms *ali.AliSms
+}
+
+func NewSms(c *cache.Client, a *ali.AliSms) *Sms {
+	return &Sms{
+		Client: c,
+		AliSms: a,
 	}
-	uuid, err := c.Client.Set("captcha-sms", value, time.Minute*time.Duration(c.Config.Expir))
+}
+
+func (s *Sms) Generate(mobile any, expir time.Duration) (string, error) {
+	value := Value{
+		Code:    string(gin_lin.Random(6)),
+		Carrier: mobile.(string),
+	}
+	uuid, err := s.Client.Set("captcha-sms", value, expir)
 	if err != nil {
 		return "", err
 	}
 
-	err = c.SendSmsCode(cfg, phone, value.Code)
+	err = s.SendSmsCode(mobile.(string), value.Code)
 	if err != nil {
 		return "", err
 	}
 	return uuid, nil
 }
 
-func (c *Captcha) SmsCodeVerify(uuid string, code int32, clear bool) (string, error) {
+func (s *Sms) Verify(mobile any, uuid string, code string) error {
 	var val Value
-	if err := c.Client.Get(uuid, "captcha-sms", &val, clear); err != nil {
-		return "", errors.New("验证码不存在或过期")
+	if err := s.Client.Get(uuid, "captcha-sms", &val, false); err != nil {
+		return errors.New("验证码不存在或过期")
 	}
-	if val.Code == code {
-		return val.Carrier, nil
-	} else {
-		return "", errors.New("验证码错误")
+	if val.Code != code {
+		return errors.New("验证码错误")
 	}
+	if val.Carrier != mobile.(string) {
+		return errors.New("不是接收验证码的手机号")
+	}
+	return nil
 }
 
-func (as Captcha) SendSmsCode(cfg *ali.AliSmsConfig, mobile string, code int32) error {
-	alisms, err := ali.NewAliSms(cfg)
-	if err != nil {
-		return err
-	}
-	if _, err := alisms.Client.SendSmsWithOptions(&dysmsapi20170525.SendSmsRequest{
+func (s Sms) SendSmsCode(mobile string, code string) error {
+	if _, err := s.AliSms.Client.SendSmsWithOptions(&dysmsapi20170525.SendSmsRequest{
 		PhoneNumbers:  tea.String(mobile),
-		SignName:      tea.String(cfg.SignName),
-		TemplateCode:  tea.String(cfg.TemplateCodeVerificationCode),
-		TemplateParam: tea.String(fmt.Sprintf(`{"code":"%d"}`, code)),
+		SignName:      tea.String(s.AliSms.Config.SignName),
+		TemplateCode:  tea.String(s.AliSms.Config.TemplateCodeVerificationCode),
+		TemplateParam: tea.String(fmt.Sprintf(`{"code":"%s"}`, code)),
 	}, &service.RuntimeOptions{}); err != nil {
 		return err
 	}

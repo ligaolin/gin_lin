@@ -1,7 +1,11 @@
 package cache
 
 import (
+	"context"
 	"time"
+
+	"github.com/gregjones/httpcache/diskcache"
+	"github.com/redis/go-redis/v9"
 )
 
 type Cache interface {
@@ -37,11 +41,17 @@ type Factory interface {
 type FileFactory struct{}
 
 func (f *FileFactory) New(config *Config) (Cache, error) {
-	return NewFile(config.File.Path), nil
+	return &File{
+		Client: diskcache.New(config.File.Path),
+		Path:   config.File.Path,
+	}, nil
 }
 
 type RedisFactory struct{}
 
 func (f *RedisFactory) New(config *Config) (Cache, error) {
-	return NewRedis(config.Redis.Addr, config.Redis.Password), nil
+	return &Redis{
+		Context: context.Background(),
+		Client:  redis.NewClient(&redis.Options{Addr: config.Redis.Addr, Password: config.Redis.Password}),
+	}, nil
 }

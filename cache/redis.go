@@ -13,13 +13,6 @@ type Redis struct {
 	Client  *redis.Client
 }
 
-func NewRedis(addr string, password string) *Redis {
-	return &Redis{
-		Context: context.Background(),
-		Client:  redis.NewClient(&redis.Options{Addr: addr, Password: password}),
-	}
-}
-
 func (r *Redis) Get(key string, value any) error {
 	str, err := r.Client.Get(r.Context, key).Result()
 	if err != nil {
