@@ -13,9 +13,9 @@ type Captcha struct {
 	Config *CaptchaConfig
 }
 
-func NewCaptcha(cfg *CaptchaConfig, cacheCfg *cache.CacheConfig) *Captcha {
+func NewCaptcha(cfg *CaptchaConfig, c cache.Cache) *Captcha {
 	return &Captcha{
-		Client: cache.NewClient(cacheCfg),
+		Client: cache.NewClient(c),
 		Config: cfg,
 	}
 }
