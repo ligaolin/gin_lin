@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/gin-gonic/gin"
 )
 
 /**
@@ -48,6 +50,36 @@ var Rules = map[string]string{
 //	type example struct {
 //		State *string `validate:"required:状态必须;in=是,否:状态值错误;"`
 //	}
+
+type Request struct {
+	Param any
+	Error error
+}
+
+func NewRequest(param any) *Request {
+	return &Request{Param: param}
+}
+
+func (r *Request) Bind(c *gin.Context) *Request {
+	if r.Error != nil {
+		return r
+	}
+
+	if err := c.Bind(r.Param); err != nil {
+		r.Error = err
+	}
+	return r
+}
+
+func (r *Request) Validate() *Request {
+	if r.Error != nil {
+		return r
+	}
+	if err := Validator(r.Param); err != nil {
+		r.Error = err
+	}
+	return r
+}
 
 // 验证数据
 func Validator(data any) error {

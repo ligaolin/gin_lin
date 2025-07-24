@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -9,8 +10,27 @@ import (
 type Time time.Time
 
 func (t *Time) MarshalJSON() ([]byte, error) {
-	tTime := time.Time(*t)
-	return fmt.Appendf(nil, "\"%v\"", tTime.Format("2006-01-02 15:04:05")), nil
+	if t == nil {
+		return []byte("null"), nil
+	}
+	return time.Time(*t).MarshalJSON()
+}
+
+func (t *Time) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*t = Time{}
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	parsed, err := time.Parse("2006-01-02 15:04:05", s)
+	if err != nil {
+		return err
+	}
+	*t = Time(parsed)
+	return nil
 }
 
 func (t *Time) ToDateString() string {
@@ -28,15 +48,18 @@ func (t *Time) ToString() string {
 }
 
 func (t Time) Value() (driver.Value, error) {
-	var zeroTime time.Time
 	tlt := time.Time(t)
-	//判断给定时间是否和默认零时间的时间戳相同
-	if tlt.UnixNano() == zeroTime.UnixNano() {
+	if tlt.IsZero() {
 		return nil, nil
 	}
 	return tlt, nil
 }
+
 func (t *Time) Scan(v interface{}) error {
+	if v == nil {
+		*t = Time{} // 设置为零值
+		return nil
+	}
 	if value, ok := v.(time.Time); ok {
 		*t = Time(value)
 		return nil

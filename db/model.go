@@ -7,33 +7,12 @@ import (
 
 	"github.com/jinzhu/copier"
 	"github.com/ligaolin/gin_lin"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-type Mysql struct {
-	Db *gorm.DB
-}
-
-// 创建mysql连接
-func NewMysql(cfg *MysqlConfig) (*Mysql, error) {
-	db, err := gorm.Open(mysql.Open(
-		fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%s&loc=%s",
-			cfg.User,
-			cfg.Password,
-			cfg.Host,
-			cfg.Port,
-			cfg.DBName,
-			cfg.Charset,
-			cfg.ParseTime,
-			cfg.Loc,
-		)), &gorm.Config{})
-	return &Mysql{Db: db}, err
-}
-
-func (d *Mysql) Model(id uint, param any, m any) error {
+func (m *Model) Model(id int32, param any, model any) error {
 	if id != 0 {
-		if err := d.Db.First(m, id).Error; err != nil {
+		if err := m.Db.First(model, id).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				return errors.New("不存在的数据")
 			} else {
@@ -48,32 +27,35 @@ func (d *Mysql) Model(id uint, param any, m any) error {
 type EditStruct struct {
 	ID     uint
 	IDName string
-	Same   []SameStruct
+	Same   []Same
 }
 
-type SameStruct struct {
-	Sql     string
+type Same struct {
+	Db      *gorm.DB
 	Message string
 }
 
-// 添加或编辑
-func (d *Mysql) Edit(param EditStruct, m any) error {
-	var count int64
-	if param.IDName == "" {
-		param.IDName = "id"
+// 唯一性判断
+func (m *Model) NotSame(sames *[]Same, id int32, idName string) *Model {
+	if m.Error != nil {
+		return m
 	}
-	for _, v := range param.Same {
-		if param.ID != 0 {
-			v.Sql += fmt.Sprintf(" AND %s != %d", param.IDName, param.ID)
-		}
-		if err := d.Db.Model(m).Where(v.Sql).Count(&count).Error; err != nil {
-			return err
+	if idName == "" {
+		idName = "id"
+	}
+
+	var count int64
+	for _, v := range *sames {
+		if err := v.Db.Where(fmt.Sprintf("%s = ?", idName), id).Count(&count).Error; err != nil {
+			m.Error = err
+			return m
 		}
 		if count > 0 {
-			return errors.New(v.Message)
+			m.Error = errors.New(v.Message)
+			return m
 		}
 	}
-	return d.Db.Save(m).Error
+	return m
 }
 
 type UpdateStruct struct {
@@ -84,7 +66,7 @@ type UpdateStruct struct {
 }
 
 // 更新
-func (d *Mysql) Update(param UpdateStruct, m any, has []string) (err error) {
+func (m *Model) Update(param UpdateStruct, model any, containsas []string) *Model {
 	if param.ID == 0 {
 		return errors.New("id必须")
 	}
@@ -94,7 +76,7 @@ func (d *Mysql) Update(param UpdateStruct, m any, has []string) (err error) {
 	if param.Field == "" {
 		return errors.New("field必须")
 	}
-	if !gin_lin.Contains(has, param.Field) {
+	if !gin_lin.Contains(containsas, param.Field) {
 		return errors.New("field数据不合法")
 	}
 	if err := d.Db.First(m, param.IDName+" = ?", param.ID).Error; err != nil {
@@ -181,14 +163,6 @@ func (d *Mysql) First(f FirstStruct, m any) error {
 		}
 	}
 	return nil
-}
-
-type ListData struct {
-	Data      any   `json:"data"`
-	Total     int64 `json:"total"`      // 总数量
-	TotalPage int64 `json:"total_page"` // 总页数
-	Page      int   `json:"page"`
-	PageSize  int   `json:"page_size"`
 }
 
 type ListStruct struct {
