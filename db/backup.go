@@ -13,28 +13,24 @@ import (
 )
 
 type Backup struct {
-	Db     *sql.DB
-	path   string
-	config *MysqlConfig
+	Db   *sql.DB
+	path string
 }
 
 // 创建一个数据库备份对象
-func NewDbBackup(cfg *MysqlConfig, path string) (*Backup, error) {
-	// 构建数据库连接字符串
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%s&loc=%s",
-		cfg.User,
-		cfg.Password,
-		cfg.Host,
-		cfg.Port,
-		cfg.DBName,
-		cfg.Charset,
-		cfg.ParseTime,
-		cfg.Loc,
-	)
-
+func NewDbBackup(dns string, path string) (*Backup, error) {
 	// 连接数据库
-	db, err := sql.Open("mysql", dsn)
-	return &Backup{Db: db, path: path, config: cfg}, err
+	db, err := sql.Open("mysql", dns)
+	return &Backup{Db: db, path: path}, err
+}
+
+func (db *Backup) GetDbName() (string, error) {
+	var dbName string
+	err := db.Db.QueryRow("SELECT DATABASE()").Scan(&dbName)
+	if err != nil {
+		return "", err
+	}
+	return dbName, nil
 }
 
 // 备份数据库
@@ -52,7 +48,11 @@ func (db *Backup) Backup() error {
 	}
 	defer file.Close()
 
-	file.WriteString("USE `" + db.config.DBName + "`;\n\n")
+	dbName, err := db.GetDbName()
+	if err != nil {
+		return fmt.Errorf("获取数据库名称失败：%w", err)
+	}
+	file.WriteString("USE `" + dbName + "`;\n\n")
 
 	tables, err := getTables(db.Db)
 	if err != nil {

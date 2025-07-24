@@ -2,8 +2,6 @@ package captcha
 
 import (
 	"time"
-
-	"github.com/ligaolin/gin_lin/cache"
 )
 
 type InputCaptcha interface {
@@ -19,18 +17,6 @@ type OutputCaptcha interface {
 type CaptchaConfig struct {
 	Expir int64 `json:"expir" toml:"expir" yaml:"expir"` // 过期时间
 }
-
-type CaptchaFactory interface {
-	New(cfg *CaptchaConfig, c cache.Cache) InputCaptcha
-	New(cfg *CaptchaConfig, c cache.Cache) OutputCaptcha
-}
-
-// func NewCaptcha(cfg *CaptchaConfig, c cache.Cache) *Captcha {
-// 	return &Captcha{
-// 		Client: cache.NewClient(c),
-// 		Config: cfg,
-// 	}
-// }
 
 type Value struct {
 	Code    string

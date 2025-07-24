@@ -12,6 +12,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+/**
+ * @author: ligaolin
+ * @description: 验证器
+ * @return {*}
+ */
+
 var Rules = map[string]string{
 	"custom":                "",                                                    // 自定义规则
 	"required":              "^.+$",                                                // 是否必须
@@ -42,19 +48,37 @@ var Rules = map[string]string{
 // 定义数据示例
 //
 //	type example struct {
-//		State *string `json:"state" validate:"required:状态必须 in=是,否:状态值错误"`
+//		State *string `validate:"required:状态必须;in=是,否:状态值错误;"`
 //	}
-type Base any
 
-// 绑定参数并验证
-func ParamGet(c *gin.Context, param any) error {
-	if err := c.Bind(param); err != nil {
-		return err
+type Request struct {
+	Param any
+	Error error
+}
+
+func NewRequest(param any) *Request {
+	return &Request{Param: param}
+}
+
+func (r *Request) Bind(c *gin.Context) *Request {
+	if r.Error != nil {
+		return r
 	}
-	if err := Validator(param); err != nil {
-		return err
+
+	if err := c.Bind(r.Param); err != nil {
+		r.Error = err
 	}
-	return nil
+	return r
+}
+
+func (r *Request) Validate() *Request {
+	if r.Error != nil {
+		return r
+	}
+	if err := Validator(r.Param); err != nil {
+		r.Error = err
+	}
+	return r
 }
 
 // 验证数据
@@ -87,7 +111,7 @@ func Validator(data any) error {
 		value := fmt.Sprintf("%v", fieldValue)
 
 		// 解析字段的 validate 标签
-		for _, tags := range strings.Split(t.Field(i).Tag.Get("validate"), " ") {
+		for _, tags := range strings.Split(t.Field(i).Tag.Get("validate"), ";") {
 			tag := strings.Split(tags, ":")
 			if len(tag) < 2 {
 				continue
@@ -159,7 +183,7 @@ func compareSizes(data1 string, data2 string, compare string, msg string) error 
 				ok = true
 			}
 		} else {
-			return errors.New("in规则错误，示例 in:开启,关闭")
+			return errors.New("in规则错误，示例 in=开启,关闭")
 		}
 	case "between":
 		data, _ := strconv.ParseFloat(data1, 64)
@@ -191,7 +215,7 @@ func compareSizes(data1 string, data2 string, compare string, msg string) error 
  * @param {string} rule_name 规则名称
  */
 func ifRange(data float64, data2 string, rule_name string) (ok bool, err error) {
-	err = errors.New(rule_name + "规则错误，示例 " + rule_name + ":2,5")
+	err = errors.New(rule_name + "规则错误，示例 " + rule_name + "=2,5")
 	arr := strings.Split(data2, ",")
 	if len(arr) == 2 {
 		data3, _ := strconv.ParseFloat(arr[0], 64)
