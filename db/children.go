@@ -5,19 +5,24 @@ import (
 	"reflect"
 )
 
-func (m *Model) FindChildrenID(ids *[]int32, pidName string) error {
+func (m *Model) FindChildrenID(ids *[]int32, pidName string) *Model {
+	if m.Error != nil {
+		return m
+	}
+
 	var cids []int32
 	if err := m.Db.Model(m.Model).Where(pidName+" IN ?", *ids).Pluck(m.PkName, &cids).Error; err != nil {
-		return err
+		m.Error = err
+		return m
 	}
 	if len(cids) > 0 {
-		err := m.FindChildrenID(&cids, pidName)
-		if err != nil {
-			return err
+		if err := m.FindChildrenID(&cids, pidName).Error; err != nil {
+			m.Error = err
+			return m
 		}
 		*ids = append(*ids, cids...)
 	}
-	return nil
+	return m
 }
 
 type FindChildrenStruct struct {

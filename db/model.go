@@ -17,15 +17,20 @@ type Model struct {
 	Model  any
 }
 
-func NewModel(db *gorm.DB, model any, pkName string) *Model {
-	if pkName == "" {
-		pkName = "id"
-	}
+func NewModel(db *gorm.DB, model any) *Model {
 	return &Model{
 		Db:     db,
-		PkName: pkName,
+		PkName: "id",
 		Model:  model,
 	}
+}
+
+func (m *Model) SetPkName(pkName string) *Model {
+	if m.Error != nil {
+		return m
+	}
+	m.PkName = pkName
+	return m
 }
 
 func (m *Model) SetPk(pk int32) *Model {

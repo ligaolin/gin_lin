@@ -8,7 +8,7 @@ type UpdateParam struct {
 }
 
 type DeleteParam struct {
-	ID any `json:"id" validate:"required:主键值必须"`
+	IDS []int32 `json:"id" validate:"required:主键值必须"`
 }
 
 type FirstParam struct {

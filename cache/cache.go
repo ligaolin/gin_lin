@@ -34,24 +34,17 @@ type RedisConfig struct {
 	Password string `json:"password" toml:"password" yaml:"password"`
 }
 
-type Factory interface {
-	New(config *Config) (Cache, error)
-}
-
-type FileFactory struct{}
-
-func (f *FileFactory) New(config *Config) (Cache, error) {
-	return &File{
-		Client: diskcache.New(config.File.Path),
-		Path:   config.File.Path,
-	}, nil
-}
-
-type RedisFactory struct{}
-
-func (f *RedisFactory) New(config *Config) (Cache, error) {
-	return &Redis{
-		Context: context.Background(),
-		Client:  redis.NewClient(&redis.Options{Addr: config.Redis.Addr, Password: config.Redis.Password}),
-	}, nil
+func New(config *Config) Cache {
+	switch config.Use {
+	case "redis":
+		return &Redis{
+			Context: context.Background(),
+			Client:  redis.NewClient(&redis.Options{Addr: config.Redis.Addr, Password: config.Redis.Password}),
+		}
+	default:
+		return &File{
+			Client: diskcache.New(config.File.Path),
+			Path:   config.File.Path,
+		}
+	}
 }
