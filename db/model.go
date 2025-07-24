@@ -83,6 +83,18 @@ func (m *Model) NotSame(sames *[]Same) *Model {
 	return m
 }
 
+func (m *Model) Save() *Model {
+	if m.Error != nil {
+		return m
+	}
+
+	if err := m.Db.Save(m.Model).Error; err != nil {
+		m.Error = err
+		return m
+	}
+	return m
+}
+
 // 更新
 func (m *Model) Update(field string, value any, containsas []string) *Model {
 	if m.Error != nil {
