@@ -10,6 +10,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"gorm.io/gorm"
 )
 
 type Backup struct {
@@ -18,10 +19,13 @@ type Backup struct {
 }
 
 // 创建一个数据库备份对象
-func NewDbBackup(dns string, path string) (*Backup, error) {
+func NewDbBackup(db *gorm.DB, path string) (*Backup, error) {
 	// 连接数据库
-	db, err := sql.Open("mysql", dns)
-	return &Backup{Db: db, path: path}, err
+	sqlxDb, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+	return &Backup{Db: sqlxDb, path: path}, err
 }
 
 func (db *Backup) GetDbName() (string, error) {
