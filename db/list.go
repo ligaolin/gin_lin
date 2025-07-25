@@ -19,7 +19,7 @@ func (m *Model) List(data *ListData) *Model {
 	}
 
 	// 查询总数
-	if err := m.Db.Count(&data.Total).Error; err != nil {
+	if err := m.Db.Model(m.Model).Count(&data.Total).Error; err != nil {
 		m.Error = err
 		return m
 	}

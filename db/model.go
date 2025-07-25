@@ -76,7 +76,7 @@ func (m *Model) NotSame(sames *[]Same) *Model {
 
 	var count int64
 	for _, v := range *sames {
-		if err := v.Db.Where(fmt.Sprintf("%s = ?", m.PkName), m.Pk).Count(&count).Error; err != nil {
+		if err := v.Db.Model(m.Model).Where(fmt.Sprintf("%s != ?", m.PkName), m.Pk).Count(&count).Error; err != nil {
 			m.Error = err
 			return m
 		}
@@ -127,7 +127,7 @@ func (m *Model) Delete(id any) *Model {
 		return m
 	}
 
-	if err := m.Db.Delete(&m, id).Error; err != nil {
+	if err := m.Db.Delete(m.Model, id).Error; err != nil {
 		m.Error = err
 		return m
 	}

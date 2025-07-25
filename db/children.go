@@ -25,20 +25,16 @@ func (m *Model) FindChildrenID(ids *[]int32, pidName string) *Model {
 	return m
 }
 
-type FindChildrenStruct struct {
-	PID          any    // 父节点 ID
-	PIDName      string // 父节点 ID 字段名
-	Where        string // 查询条件
-	Order        string // 排序条件
-	IDName       string
-	ChildrenName string
-}
+func (m *Model) FindChildren(pid any, pidName string, childrenName string, order string) *Model {
+	if m.Error != nil {
+		return m
+	}
 
-func (m *Model) FindChildren(param FindChildrenStruct, models any) error {
 	// 获取反射值
-	sliceValue := reflect.ValueOf(m)
+	sliceValue := reflect.ValueOf(m.Model)
 	if sliceValue.Kind() != reflect.Ptr || sliceValue.Elem().Kind() != reflect.Slice {
-		return fmt.Errorf("m must be a pointer to a slice")
+		m.Error = fmt.Errorf("m must be a pointer to a slice")
+		return m
 	}
 
 	// 获取切片元素类型
@@ -48,19 +44,16 @@ func (m *Model) FindChildren(param FindChildrenStruct, models any) error {
 	}
 
 	// 构建查询
-	db := m.Db.Model(models)
-	if param.Where == "" {
-		db = db.Where(fmt.Sprintf("%s = ?", param.PIDName), param.PID)
-	} else {
-		db = db.Where(param.Where+fmt.Sprintf(" AND %s = ?", param.PIDName), param.PID)
-	}
-	if param.Order != "" {
-		db = db.Order(param.Order)
+
+	DB := m.Db.Model(m.Model).Where(fmt.Sprintf("%s = ?", m.PkName), pid)
+	if order != "" {
+		DB = DB.Order(order)
 	}
 
 	// 执行查询
-	if err := db.Find(m).Error; err != nil {
-		return err
+	if err := DB.Find(m).Error; err != nil {
+		m.Error = err
+		return m
 	}
 
 	// 递归查询子节点
@@ -73,43 +66,41 @@ func (m *Model) FindChildren(param FindChildrenStruct, models any) error {
 
 		// 获取当前节点的 ID
 		var idField reflect.Value
-		if param.IDName != "" {
-			idField = item.FieldByName(param.IDName)
+		if pidName != "" {
+			idField = item.FieldByName(pidName)
 		} else {
 			idField = item.FieldByName("ID")
 		}
 		if !idField.IsValid() {
-			return fmt.Errorf("model must have an ID field")
+			m.Error = fmt.Errorf("model must have an ID field")
+			return m
 		}
 		id := idField.Interface()
 
 		// 获取 Children 字段
 		var childrenField reflect.Value
-		if param.ChildrenName != "" {
-			childrenField = item.FieldByName(param.ChildrenName)
+		if childrenName != "" {
+			childrenField = item.FieldByName(childrenName)
 		} else {
 			childrenField = item.FieldByName("Children")
 		}
 		if !childrenField.IsValid() || !childrenField.CanSet() {
-			return fmt.Errorf("model must have a Children field that can be set")
+			m.Error = fmt.Errorf("model must have a Children field that can be set")
+			return m
 		}
 
 		// 创建子节点切片
 		childrenSlice := reflect.New(reflect.SliceOf(elemType)).Interface()
 
 		// 递归查询子节点
-		if err := m.FindChildren(FindChildrenStruct{
-			PID:     id,
-			PIDName: param.PIDName,
-			Where:   param.Where,
-			Order:   param.Order,
-		}, childrenSlice); err != nil {
-			return err
+		if err := m.FindChildren(id, pidName, childrenName, order).Error; err != nil {
+			m.Error = err
+			return m
 		}
 
 		// 设置 Children 字段
 		childrenField.Set(reflect.ValueOf(childrenSlice).Elem())
 	}
 
-	return nil
+	return m
 }

@@ -3,6 +3,7 @@ package captcha
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ligaolin/gin_lin"
@@ -24,7 +25,7 @@ func NewEmail(c *cache.Client, e *email.Email) *Email {
 
 func (c *Email) Generate(email any, expir time.Duration) (string, error) {
 	value := Value{
-		Code:    string(gin_lin.Random(6)),
+		Code:    fmt.Sprintf("%d", gin_lin.Random(6)),
 		Carrier: email.(string),
 	}
 	uuid, err := c.Client.Set("captcha-email", value, expir)
@@ -43,7 +44,7 @@ func (e *Email) Verify(email any, uuid string, code string) error {
 	if err := e.Client.Get(uuid, "captcha-email", &val, false); err != nil {
 		return errors.New("验证码不存在或过期")
 	}
-	if val.Code != code {
+	if !strings.EqualFold(val.Code, code) {
 		return errors.New("验证码错误")
 	}
 	if val.Carrier != email.(string) {

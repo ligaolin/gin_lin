@@ -28,9 +28,9 @@ func GenerateRandomAlphanumeric(length int) string {
 }
 
 // 判断字符串是否在切片里
-func Contains(slice []string, str string) bool {
+func Contains[T comparable](slice []T, val T) bool {
 	for _, item := range slice {
-		if item == str {
+		if item == val {
 			return true
 		}
 	}

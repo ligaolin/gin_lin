@@ -13,7 +13,7 @@ type JwtConfig struct {
 }
 
 type Claims struct {
-	ID   uint   `json:"id"`
+	ID   int32  `json:"id"`
 	Type string `json:"type"`
 	jwt.RegisteredClaims
 }
@@ -28,7 +28,7 @@ func NewJwt(cfg *JwtConfig) *Jwt {
 	}
 }
 
-func (j *Jwt) Set(id uint, types string) (string, error) {
+func (j *Jwt) Set(id int32, types string) (string, error) {
 	claims := Claims{
 		id,
 		types,

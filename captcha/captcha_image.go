@@ -2,6 +2,7 @@ package captcha
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/ligaolin/gin_lin/cache"
@@ -59,7 +60,7 @@ func (i *Image) Verify(uuid string, code string) error {
 	if err := i.Client.Get(uuid, "captcha-image", &val, false); err != nil {
 		return errors.New("验证码不存在或过期")
 	}
-	if val.Code != code {
+	if !strings.EqualFold(val.Code, code) {
 		return errors.New("验证码错误")
 	}
 	return nil

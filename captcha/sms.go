@@ -3,6 +3,7 @@ package captcha
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	dysmsapi20170525 "github.com/alibabacloud-go/dysmsapi-20170525/v5/client"
@@ -27,7 +28,7 @@ func NewSms(c *cache.Client, a *ali.AliSms) *Sms {
 
 func (s *Sms) Generate(mobile any, expir time.Duration) (string, error) {
 	value := Value{
-		Code:    string(gin_lin.Random(6)),
+		Code:    fmt.Sprintf("%d", gin_lin.Random(6)),
 		Carrier: mobile.(string),
 	}
 	uuid, err := s.Client.Set("captcha-sms", value, expir)
@@ -47,7 +48,7 @@ func (s *Sms) Verify(mobile any, uuid string, code string) error {
 	if err := s.Client.Get(uuid, "captcha-sms", &val, false); err != nil {
 		return errors.New("验证码不存在或过期")
 	}
-	if val.Code != code {
+	if !strings.EqualFold(val.Code, code) {
 		return errors.New("验证码错误")
 	}
 	if val.Carrier != mobile.(string) {
