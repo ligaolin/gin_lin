@@ -3,6 +3,8 @@ package db
 import (
 	"fmt"
 	"reflect"
+
+	"gorm.io/gorm"
 )
 
 func (m *Model) FindChildrenID(ids *[]int32, pidName string) *Model {
@@ -24,81 +26,79 @@ func (m *Model) FindChildrenID(ids *[]int32, pidName string) *Model {
 	}
 	return m
 }
-
-func (m *Model) FindChildren(pid any, pidName string, childrenName string, order string) *Model {
+func (m *Model) FindChildren(pid any, idName, pidName, childrenName, order string) *Model {
 	if m.Error != nil {
 		return m
 	}
 
-	// 获取反射值
-	sliceValue := reflect.ValueOf(m.Model)
-	if sliceValue.Kind() != reflect.Ptr || sliceValue.Elem().Kind() != reflect.Slice {
-		m.Error = fmt.Errorf("m must be a pointer to a slice")
+	// 设置默认字段名
+	if pidName == "" {
+		pidName = "parent_id" // 更常见的默认列名
+	}
+	if idName == "" {
+		idName = "id"
+	}
+	if childrenName == "" {
+		childrenName = "Children"
+	}
+
+	// 检查模型是否为切片指针
+	sliceVal := reflect.ValueOf(m.Model)
+	if sliceVal.Kind() != reflect.Ptr || sliceVal.Elem().Kind() != reflect.Slice {
+		m.Error = fmt.Errorf("target must be a pointer to slice")
 		return m
 	}
 
 	// 获取切片元素类型
-	elemType := sliceValue.Elem().Type().Elem()
+	elemType := sliceVal.Elem().Type().Elem()
 	if elemType.Kind() == reflect.Ptr {
 		elemType = elemType.Elem()
 	}
 
-	// 构建查询
+	// 关键修复：每次递归创建新的 DB 会话
+	db := m.Db.Session(&gorm.Session{NewDB: true})
 
-	DB := m.Db.Model(m.Model).Where(fmt.Sprintf("%s = ?", m.PkName), pid)
-	if order != "" {
-		DB = DB.Order(order)
-	}
-
-	// 执行查询
-	if err := DB.Find(m).Error; err != nil {
+	// 查询当前层级数据
+	if err := db.Where(fmt.Sprintf("%s = ?", pidName), pid).Order(order).Find(m.Model).Error; err != nil {
 		m.Error = err
 		return m
 	}
 
-	// 递归查询子节点
-	slice := sliceValue.Elem()
-	for i := range slice.Len() {
+	// 处理子节点
+	slice := sliceVal.Elem()
+	for i := 0; i < slice.Len(); i++ {
 		item := slice.Index(i)
 		if item.Kind() == reflect.Ptr {
 			item = item.Elem()
 		}
 
-		// 获取当前节点的 ID
-		var idField reflect.Value
-		if pidName != "" {
-			idField = item.FieldByName(pidName)
-		} else {
-			idField = item.FieldByName("ID")
-		}
+		// 获取当前节点ID
+		idField := item.FieldByName(idName)
 		if !idField.IsValid() {
-			m.Error = fmt.Errorf("model must have an ID field")
-			return m
-		}
-		id := idField.Interface()
-
-		// 获取 Children 字段
-		var childrenField reflect.Value
-		if childrenName != "" {
-			childrenField = item.FieldByName(childrenName)
-		} else {
-			childrenField = item.FieldByName("Children")
-		}
-		if !childrenField.IsValid() || !childrenField.CanSet() {
-			m.Error = fmt.Errorf("model must have a Children field that can be set")
+			m.Error = fmt.Errorf("field %s not found", idName)
 			return m
 		}
 
-		// 创建子节点切片
+		// 准备子节点容器
+		childrenField := item.FieldByName(childrenName)
+		if !childrenField.IsValid() {
+			m.Error = fmt.Errorf("field %s not found", childrenName)
+			return m
+		}
+
 		childrenSlice := reflect.New(reflect.SliceOf(elemType)).Interface()
+		childModel := &Model{
+			Db:    db, // 使用新的会话
+			Model: childrenSlice,
+		}
 
-		// 递归查询子节点
-		if err := m.FindChildren(id, pidName, childrenName, order).Error; err != nil {
+		// 递归查询
+		if err := childModel.FindChildren(idField.Interface(), idName, pidName, childrenName, order).Error; err != nil {
 			m.Error = err
 			return m
 		}
 
-		// 设置 Children 字段
+		// 赋值子节点
 		childrenField.Set(reflect.ValueOf(childrenSlice).Elem())
 	}
 
