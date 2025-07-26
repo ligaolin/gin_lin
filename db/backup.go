@@ -39,8 +39,6 @@ func (db *Backup) GetDbName() (string, error) {
 
 // 备份数据库
 func (db *Backup) Backup() error {
-	defer db.Db.Close()
-
 	dir := filepath.Dir(db.path)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return fmt.Errorf("无法创建目录 %s：%w", dir, err)
@@ -173,7 +171,6 @@ func getCreateTableSQL(db *sql.DB, table string) (string, error) {
 
 // 恢复数据库
 func (db *Backup) Restore() error {
-	defer db.Db.Close()
 	file, err := os.Open(db.path)
 	if err != nil {
 		return fmt.Errorf("无法打开备份文件：%w", err)
