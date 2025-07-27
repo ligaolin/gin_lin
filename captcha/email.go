@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ligaolin/gin_lin"
-	"github.com/ligaolin/gin_lin/cache"
-	"github.com/ligaolin/gin_lin/email"
+	"github.com/ligaolin/gin_lin/v2"
+	"github.com/ligaolin/gin_lin/v2/cache"
+	"github.com/ligaolin/gin_lin/v2/email"
 )
 
 type Email struct {

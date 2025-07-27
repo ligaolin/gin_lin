@@ -7,7 +7,7 @@ import (
 	"github.com/go-pay/gopay"
 	"github.com/go-pay/gopay/wechat/v3"
 	"github.com/go-pay/xlog"
-	"github.com/ligaolin/gin_lin"
+	"github.com/ligaolin/gin_lin/v2"
 )
 
 type WechatPayConfig struct {

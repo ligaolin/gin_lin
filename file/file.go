@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ligaolin/gin_lin"
+	"github.com/ligaolin/gin_lin/v2"
 )
 
 type Files struct {

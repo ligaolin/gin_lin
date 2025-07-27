@@ -9,9 +9,9 @@ import (
 	dysmsapi20170525 "github.com/alibabacloud-go/dysmsapi-20170525/v5/client"
 	"github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/ligaolin/gin_lin"
-	"github.com/ligaolin/gin_lin/cache"
-	"github.com/ligaolin/gin_lin/sdk/ali"
+	"github.com/ligaolin/gin_lin/v2"
+	"github.com/ligaolin/gin_lin/v2/cache"
+	"github.com/ligaolin/gin_lin/v2/sdk/ali"
 )
 
 type Sms struct {

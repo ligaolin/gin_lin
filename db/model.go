@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jinzhu/copier"
-	"github.com/ligaolin/gin_lin"
+	"github.com/ligaolin/gin_lin/v2"
 	"gorm.io/gorm"
 )
 
