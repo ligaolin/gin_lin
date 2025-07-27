@@ -33,10 +33,10 @@ func (m *Model) FindChildren(pid any, idName, pidName, childrenName, order strin
 
 	// 设置默认字段名
 	if pidName == "" {
-		pidName = "parent_id" // 更常见的默认列名
+		pidName = "pid" // 更常见的默认列名
 	}
 	if idName == "" {
-		idName = "id"
+		idName = "ID"
 	}
 	if childrenName == "" {
 		childrenName = "Children"

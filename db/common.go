@@ -24,14 +24,14 @@ type ListParamBase struct {
 // 模型基础字段
 type IDCreatedAtUpdatedAt struct {
 	ID        int32 `json:"id" gorm:"primarykey;comment:ID"`
-	CreatedAt *Time `json:"created_at" gorm:"comment:创建时间"`
-	UpdatedAt *Time `json:"updated_at" gorm:"comment:更新时间"`
+	CreatedAt Time  `json:"created_at" gorm:"comment:创建时间"`
+	UpdatedAt Time  `json:"updated_at" gorm:"comment:更新时间"`
 }
 
 // 模型基础字段
 type IDCreatedAtUpdatedAtDeletedAt struct {
 	IDCreatedAtUpdatedAt
-	DeletedAt *Time `json:"deleted_at" gorm:"index;comment:删除时间"`
+	DeletedAt Time `json:"deleted_at" gorm:"index;comment:删除时间"`
 }
 
 // 模型排序
