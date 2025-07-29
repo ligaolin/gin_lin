@@ -24,7 +24,7 @@ func (m *Model) Where(data []Where) *Model {
 		if v.Nullable || (!v.Nullable && !isNilOrEmpty(v.Value)) {
 			switch strings.ToUpper(v.Op) {
 			case "IN":
-				m.Db = m.Db.Where(fmt.Sprintf("%s IN (?)", v.Name), v.Value)
+				m.Db = m.Db.Where(fmt.Sprintf("%s IN ?", v.Name), v.Value)
 			case "LIKE":
 				m.Db = m.Db.Where(fmt.Sprintf("%s LIKE ?", v.Name), fmt.Sprintf("%%%s%%", v.Value))
 			case "NOT LIKE":
