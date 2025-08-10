@@ -40,10 +40,7 @@ func (m *Model) SetPk(pk int32) *Model {
 	m.Pk = pk
 	if m.Pk != 0 {
 		if err := m.Db.First(m.Model, m.Pk).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				m.Error = errors.New("不存在的数据")
-				return m
-			} else {
+			if err != gorm.ErrRecordNotFound {
 				m.Error = err
 				return m
 			}
