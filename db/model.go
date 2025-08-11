@@ -40,10 +40,7 @@ func (m *Model) SetPk(pk int32) *Model {
 	m.Pk = pk
 	if m.Pk != 0 {
 		if err := m.Db.First(m.Model, m.Pk).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				m.Error = errors.New("不存在的数据")
-				return m
-			} else {
+			if err != gorm.ErrRecordNotFound {
 				m.Error = err
 				return m
 			}
@@ -138,13 +135,10 @@ func (m *Model) Delete(id any) *Model {
 func (m *Model) Code(n int, field string) (string, error) {
 	for {
 		code := gin_lin.GenerateRandomAlphanumeric(n)
-		if err := m.Db.Where(field+" = ?", code).First(m).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				// 如果记录不存在，说明生成的 code 是唯一的，可以返回
-				return code, nil
-			} else {
-				return "", fmt.Errorf("查询数据库失败: %w", err)
-			}
+		var count int64
+		m.Db.Model(m.Model).Where(field+" = ?", code).Count(&count)
+		if count == 0 {
+			return code, nil
 		}
 	}
 }
