@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/jinzhu/copier"
 	"github.com/ligaolin/gin_lin/v2"
@@ -40,6 +41,21 @@ func (m *Model) SetPk(pk int32) *Model {
 	m.Pk = pk
 	if m.Pk != 0 {
 		if err := m.Db.First(m.Model, m.Pk).Error; err != nil {
+			if err != gorm.ErrRecordNotFound {
+				m.Error = err
+				return m
+			}
+		}
+	}
+	return m
+}
+
+func (m *Model) SetModel(db *gorm.DB) *Model {
+	if m.Error != nil {
+		return m
+	}
+	if m.Pk != 0 {
+		if err := db.First(m.Model).Error; err != nil {
 			if err != gorm.ErrRecordNotFound {
 				m.Error = err
 				return m
@@ -107,7 +123,7 @@ func (m *Model) Update(field string, value any, containsas []string) *Model {
 		m.Error = errors.New("field必须")
 		return m
 	}
-	if !gin_lin.Contains(containsas, field) {
+	if !slices.Contains(containsas, field) {
 		m.Error = errors.New("field数据不合法")
 		return m
 	}

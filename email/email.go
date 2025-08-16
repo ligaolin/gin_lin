@@ -15,8 +15,8 @@ type EmailConfig struct {
 }
 
 type Email struct {
-	dialer *gomail.Dialer
-	config *EmailConfig
+	Dialer *gomail.Dialer
+	Config *EmailConfig
 }
 
 func New(cfg *EmailConfig) (*Email, error) {
@@ -25,8 +25,8 @@ func New(cfg *EmailConfig) (*Email, error) {
 	}
 
 	return &Email{
-		dialer: gomail.NewDialer(cfg.Smtp, cfg.Port, cfg.Email, cfg.Password),
-		config: cfg,
+		Dialer: gomail.NewDialer(cfg.Smtp, cfg.Port, cfg.Email, cfg.Password),
+		Config: cfg,
 	}, nil
 }
 
@@ -57,9 +57,9 @@ func (e *Email) Send(to []string, subject, body string, opts ...Option) error {
 	m := gomail.NewMessage()
 
 	// 设置发件人
-	from := e.config.Email
-	if e.config.FromName != "" {
-		m.SetHeader("From", m.FormatAddress(from, e.config.FromName))
+	from := e.Config.Email
+	if e.Config.FromName != "" {
+		m.SetHeader("From", m.FormatAddress(from, e.Config.FromName))
 	} else {
 		m.SetHeader("From", from)
 	}
@@ -82,7 +82,7 @@ func (e *Email) Send(to []string, subject, body string, opts ...Option) error {
 	}
 
 	// 发送邮件
-	if err := e.dialer.DialAndSend(m); err != nil {
+	if err := e.Dialer.DialAndSend(m); err != nil {
 		return fmt.Errorf("发送邮件失败: %w", err)
 	}
 	return nil

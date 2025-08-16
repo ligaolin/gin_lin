@@ -8,13 +8,14 @@ import (
 	"time"
 )
 
-const (
-	letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	digits  = "0123456789"
-)
-
-// 生成随机字符串
+/**
+ * @description：生成随机字符串
+ */
 func GenerateRandomAlphanumeric(length int) string {
+	const (
+		letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		digits  = "0123456789"
+	)
 	rand.NewSource(time.Now().UnixNano())
 	result := make([]byte, length)
 	for i := range result {
@@ -27,17 +28,9 @@ func GenerateRandomAlphanumeric(length int) string {
 	return string(result)
 }
 
-// 判断字符串是否在切片里
-func Contains[T comparable](slice []T, val T) bool {
-	for _, item := range slice {
-		if item == val {
-			return true
-		}
-	}
-	return false
-}
-
-// 字符串转切片，例如1,2,3转成[]uint{1,2,3}
+/**
+ * @description：字符串转切片，例如1,2,3转成[]uint{1,2,3}
+ */
 func ToSliceUint(s any, split string) ([]uint, error) {
 	// 分割字符串
 	parts := strings.Split(fmt.Sprintf("%v", s), split)
@@ -51,7 +44,7 @@ func ToSliceUint(s any, split string) ([]uint, error) {
 		// 将子字符串转换为 uint64
 		value, err := strconv.ParseUint(trimmedPart, 10, 32)
 		if err != nil {
-			return nil, fmt.Errorf("error converting string to uint64: %v", err)
+			return nil, fmt.Errorf("error converting string to uint64：%v", err)
 		}
 		result = append(result, uint(value))
 	}
@@ -59,7 +52,9 @@ func ToSliceUint(s any, split string) ([]uint, error) {
 	return result, nil
 }
 
-// 字符串转切片，例如1,2,3转成[]string{'1','2','3'}
+/**
+ * @description：字符串转切片，例如1,2,3转成[]string{'1','2','3'}
+ */
 func StringToSliceString(s string, split string) ([]string, error) {
 	// 分割字符串
 	parts := strings.Split(s, split)
@@ -75,12 +70,35 @@ func StringToSliceString(s string, split string) ([]string, error) {
 	return result, nil
 }
 
-// 字符串转字符串，实例1,2,3转成1','2','3
+/**
+ * @description：字符串转字符串，例如1,2,3转成1','2','3
+ */
 func StringToString(s string, split0 string, split1 string) string {
 	return strings.Join(strings.Split(s, split0), split1)
 }
 
-// 判断字符串是否以prefix开头
+/**
+ * @description：判断字符串是否以prefix开头
+ */
 func StringPreIs(s string, prefix string) bool {
 	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
+}
+
+/**
+ * @description：从数组中随机获取count个元素（不重复）组成新数组
+ */
+func GetRandomUniqueStrings(arr []string, count int) ([]string, error) {
+	if len(arr) < count {
+		return nil, fmt.Errorf("数组长度不足")
+	}
+
+	// 生成随机索引排列
+	randIndices := rand.Perm(len(arr))[:count]
+
+	result := make([]string, count)
+	for i, idx := range randIndices {
+		result[i] = arr[idx]
+	}
+
+	return result, nil
 }
