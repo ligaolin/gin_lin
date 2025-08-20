@@ -8,35 +8,36 @@ import (
 
 type Time time.Time
 
-func (t *Time) MarshalJSON() ([]byte, error) {
-	tTime := time.Time(*t)
-	return fmt.Appendf(nil, "\"%v\"", tTime.Format("2006-01-02 15:04:05")), nil
+func (t Time) MarshalJSON() ([]byte, error) {
+	tTime := time.Time(t)
+	if tTime.IsZero() {
+		return []byte("null"), nil
+	}
+	return fmt.Appendf(nil, "\"%s\"", tTime.Format("2006-01-02 15:04:05")), nil
 }
 
-func (t *Time) ToDateString() string {
-	if t == nil {
+func (t Time) ToDateString() string {
+	if time.Time(t).IsZero() {
 		return ""
 	}
-	return time.Time(*t).Format("2006-01-02")
+	return time.Time(t).Format("2006-01-02")
 }
 
-func (t *Time) ToString() string {
-	if t == nil {
+func (t Time) ToString() string {
+	if time.Time(t).IsZero() {
 		return ""
 	}
-	return time.Time(*t).Format("2006-01-02 15:04:05")
+	return time.Time(t).Format("2006-01-02 15:04:05")
 }
 
 func (t Time) Value() (driver.Value, error) {
-	var zeroTime time.Time
-	tlt := time.Time(t)
-	//判断给定时间是否和默认零时间的时间戳相同
-	if tlt.UnixNano() == zeroTime.UnixNano() {
+	if time.Time(t).IsZero() {
 		return nil, nil
 	}
-	return tlt, nil
+	return time.Time(t), nil
 }
-func (t *Time) Scan(v interface{}) error {
+
+func (t *Time) Scan(v any) error {
 	if value, ok := v.(time.Time); ok {
 		*t = Time(value)
 		return nil
