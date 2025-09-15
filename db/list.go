@@ -8,8 +8,8 @@ type ListData struct {
 	Data      any   `json:"data"`
 	Total     int64 `json:"total"`      // 总数量
 	TotalPage int64 `json:"total_page"` // 总页数
-	Page      int   `json:"page"`
-	PageSize  int   `json:"page_size"`
+	Page      int32 `json:"page"`
+	PageSize  int32 `json:"page_size"`
 }
 
 // 查询列表
