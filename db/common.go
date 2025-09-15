@@ -16,8 +16,8 @@ type FirstParam struct {
 }
 
 type ListParamBase struct {
-	Page     int    `form:"page"`
-	PageSize int    `form:"page_size"`
+	Page     int32  `form:"page"`
+	PageSize int32  `form:"page_size"`
 	Order    string `form:"order"`
 }
 
